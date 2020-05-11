@@ -1,0 +1,16 @@
+{
+    application,
+    packbeam, [
+        {description, "An escript to manipulate (create, list, delete) AtomVM PackBeam files"},
+        {vsn, "0.1.0"},
+        {registered, []},
+        {applications, [
+            kernel,
+            stdlib
+        ]},
+        {env,[]},
+        {modules, []},
+        {licenses, ["BSD 3-clause"]},
+        {links, []}
+    ]
+}.
