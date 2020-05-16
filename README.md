@@ -5,9 +5,9 @@ An escript and OTP library used to generate an <a href="http://github.com/bettio
 This tool roughly approximates the functionality of the AtomVM `PackBEAM` utility, except:
 
 * Support for multiple data types, include beam files, text files, etc
-* "Smart" extraction of beams from AVM files, so that only the beams that are needed are packed (TODO)
-* Support for specifying directories of beam or AVM files (TODO)
-* Rebar integration (TODO)
+* "Smart" extraction of beams from AVM files, so that only the beams that are needed are packed
+
+The `packbeam` tool may be used on its own.  More typically, it is used internally as part of the <a href="https://github.com/fadushin/atomvm_rebar3_plugin">atomvm_rebar3_plugin</a> `rebar3` plugin.
 
 # Prerequisites
 
@@ -46,7 +46,7 @@ On-line help is available via the `help` sub-command:
         packbeam <sub-command> <options>
 
     The following sub-commands are supported:
-        * create -out <output-avm-file-path> [<input-file>]+
+        * create -out <output-avm-file-path> [-prune] [<input-file>]+
         * list -in <input-avm-file-path>
         * delete -in <input-avm-file-path> [-out <output-avm-file-path>] [<name>]+
         * help  print this help
@@ -74,6 +74,10 @@ In addition, you may specify a "normal" (i.e., non-beam or non-AVM) file.  Norma
     shell$ packbeam create -out mylib.avm mylib.avm mylib/priv/sample.txt
 
 > Note.  It is conventional in AtomVM for normal files to have the path `<module-name>/priv/<file-name>`.
+
+If you specify the `-prune` flag, then `packbeam` will only include beam files that are transitively dependent on the entrypoint beam.  Transitive dependencies are determined by imports, as well as use of an atom in a module (.e.g, as the result of a dynamic function call, based on a module name).
+
+If there is no beam file with an entrypoint defined in the list of input modules and the `-prune` flag is used, the command will fail.  You should _not_ use the `-prune` flag if you are trying to build libraries suitable for inclusion on other AtomVM applications.
 
 ## `list` sub-command
 

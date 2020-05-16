@@ -34,7 +34,7 @@
 -module(packbeam).
 
 %% API exports
--export([create/2, list/1, delete/3]).
+-export([create/3, create/2, list/1, delete/3]).
 %% escript
 -export([main/1]).
 
@@ -66,14 +66,32 @@
 %% @throws  Reason::string()
 %% @doc     Create an AVM file.
 %%
-%%          This function will create an AVM file at the location specified in
-%%          OutputPath, using the input files specified in InputPaths.
+%%          Equivalent to create(OutputPath, InputPaths, false).
 %% @end
 %%-----------------------------------------------------------------------------
 -spec create(path(), [path()]) -> ok | {error, Reason::term()}.
 create(OutputPath, InputPaths) ->
+    create(OutputPath, InputPaths, false).
+
+%%-----------------------------------------------------------------------------
+%% @param   OutputPath the path to write the AVM file
+%% @param   InputPaths a list of paths of beam files, AVM files, or normal data files
+%% @param   Prune whether to prune the archive.  Without pruning, all found BEAM files are included
+%%          in the output AVM file.  With pruning, then packbeam will attempt to
+%%          determine which BEAM files are needed to run the application, depending
+%%          on which modules are (transitively) referenced from the AVM entrypoint.
+%% @returns ok if the file was created.
+%% @throws  Reason::string()
+%% @doc     Create an AVM file.
+%%
+%%          This function will create an AVM file at the location specified in
+%%          OutputPath, using the input files specified in InputPaths.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec create(path(), [path()], Prune::boolean()) -> ok | {error, Reason::term()}.
+create(OutputPath, InputPaths, Prune) ->
     ParsedFiles = parse_files(InputPaths),
-    write_packbeam(OutputPath, ParsedFiles).
+    write_packbeam(OutputPath, case Prune of true -> prune(ParsedFiles); _ -> ParsedFiles end).
 
 %%-----------------------------------------------------------------------------
 %% @param   InputPath the AVM file from which to list elements
@@ -155,14 +173,111 @@ load_file(Path) ->
     end.
 
 %% @private
+prune(ParsedFiles) ->
+    case find_entrypoint(ParsedFiles) of
+        false ->
+            throw("No input beam files contain start/0 entrypoint");
+        {value, Entrypoint} ->
+            BeamFiles = lists:filter(fun is_beam/1, ParsedFiles),
+            Modules = closure(Entrypoint, BeamFiles -- [Entrypoint], [get_module(Entrypoint)]),
+            filter_modules(Modules, ParsedFiles)
+    end.
+
+%% @private
+find_entrypoint(ParsedFiles) ->
+    lists:search(fun is_entrypoint/1, ParsedFiles).
+
+%% @private
+is_entrypoint(ParsedFile) ->
+    StartBeam = ?BEAM_START_FLAG bor ?BEAM_CODE_FLAG,
+    (proplists:get_value(flags, ParsedFile) band StartBeam) =:= StartBeam.
+
+%% @private
+is_beam(ParsedFile) ->
+    (proplists:get_value(flags, ParsedFile) band ?BEAM_CODE_FLAG) =:= ?BEAM_CODE_FLAG.
+
+%% @private
+closure(_Current, [], Accum) ->
+    lists:reverse(Accum);
+closure(Current, Candidates, Accum) ->
+    CandidateModules = get_modules(Candidates),
+    CurrentsImports = get_imports(Current),
+    CurrentsAtoms = get_atoms(Current),
+    DepModules = intersection(CurrentsImports ++ CurrentsAtoms, CandidateModules) -- Accum,
+    lists:foldl(
+        fun(DepModule, A) ->
+            case lists:member(DepModule, A) of
+                true -> A;
+                _ ->
+                    NewCandidates = remove(DepModule, Candidates),
+                    closure(get_parsed_file(DepModule, Candidates), NewCandidates, [DepModule|A])
+            end
+        end,
+        Accum,
+        DepModules
+    ).
+
+%% @private
+remove(Module, ParsedFiles) ->
+    [P || P <- ParsedFiles, Module =/= proplists:get_value(module, P)].
+
+%% @private
+get_imports(ParsedFile) ->
+    Imports = proplists:get_value(imports, proplists:get_value(chunk_refs, ParsedFile)),
+    lists:usort([M || {M, _F, _A} <- Imports]).
+
+%% @private
+get_atoms(ParsedFile) ->
+    proplists:get_value(atoms, proplists:get_value(chunk_refs, ParsedFile)).
+
+%% @private
+get_modules(ParsedFiles) ->
+    [get_module(ParsedFile) || ParsedFile <- ParsedFiles].
+
+%% @private
+get_module(ParsedFile) ->
+    proplists:get_value(module, ParsedFile).
+
+%% @private
+get_parsed_file(Module, ParsedFiles) ->
+    {value, V} = lists:search(
+        fun(ParsedFile) ->
+            proplists:get_value(module, ParsedFile) =:= Module
+        end,
+        ParsedFiles
+    ), V.
+
+%% @private
+intersection(A, B) ->
+    lists:filter(
+        fun(E) ->
+            lists:member(E, B)
+        end,
+        A
+    ).
+
+%% @private
+filter_modules(Modules, ParsedFiles) ->
+    lists:filter(
+        fun(ParsedFile) ->
+            case is_beam(ParsedFile) of
+                true ->
+                    lists:member(get_module(ParsedFile), Modules);
+                _ ->
+                    true
+            end
+        end,
+        ParsedFiles
+    ).
+
+%% @private
 parse_file(beam, _InputPath, Data) ->
     {ok, Module, Chunks} = beam_lib:all_chunks(Data),
     UncompressedChunks = uncompress_literals(Chunks),
     FilteredChunks = filter_chunks(UncompressedChunks),
     {ok, Binary} = beam_lib:build_module(FilteredChunks),
-    beam_lib:all_chunks(Binary),
-    {ok, {Module, ExportChunks}} = beam_lib:chunks(Data, [exports]),
-    Exports = proplists:get_value(exports, ExportChunks),
+    {ok, {Module, ChunkRefs}} = beam_lib:chunks(Data, [imports, exports, atoms]),
+    Exports = proplists:get_value(exports, ChunkRefs),
     Flags = case lists:member({start, 0}, Exports) of
         true ->
             ?BEAM_CODE_FLAG bor ?BEAM_START_FLAG;
@@ -170,9 +285,11 @@ parse_file(beam, _InputPath, Data) ->
             ?BEAM_CODE_FLAG
     end,
     [[
+        {module, Module},
         {module_name, io_lib:format("~s.beam", [atom_to_list(Module)])},
         {flags, Flags},
-        {data, Binary}
+        {data, Binary},
+        {chunk_refs, ChunkRefs}
     ]];
 parse_file(avm, InputPath, Data) ->
     case Data of
@@ -215,8 +332,14 @@ parse_beam(<<C:8, Rest/binary>>, Tmp, in_module_name, Accum) ->
 parse_beam(<<0:8, Rest/binary>>, Tmp, eat_padding, Accum) ->
     parse_beam(Rest, Tmp, eat_padding, Accum);
 parse_beam(Data, _Tmp, eat_padding, Accum) ->
-    %{ok, _Module, _Chunks} = beam_lib:all_chunks(Data),
-    [{data, Data} | Accum].
+    Flags = proplists:get_value(flags, Accum),
+    case Flags band ?BEAM_CODE_FLAG of
+        ?BEAM_CODE_FLAG ->
+            {ok, {Module, ChunkRefs}} = beam_lib:chunks(Data, [imports, exports, atoms]),
+            [{module, Module}, {chunk_refs, ChunkRefs}, {data, Data} | Accum];
+        _ ->
+            [{data, Data} | Accum]
+    end.
 
 %% @private
 uncompress_literals(Chunks) ->
@@ -316,8 +439,9 @@ main(Argv) ->
                         erlang:halt(255)
                 end
             catch
-                _:Exception:_S ->
-                    io:format("packbeam: exception: ~s~n", [Exception]),
+                _:Exception:S ->
+                    io:format("packbeam: caught exception: ~p~n", [Exception]),
+                    io:format("Stacktrace: ~n~p~n", [S]),
                     print_help(),
                     erlang:halt(255)
             end
@@ -335,7 +459,7 @@ print_help() ->
         "~n"
         "The following sub-commands are supported:"
         "~n"
-        "    * create -out <output-avm-file-path> [<input-file>]+~n"
+        "    * create -out <output-avm-file-path> [-prune] [<input-file>]+~n"
         "    * list -in <input-avm-file-path>~n"
         "    * delete -in <input-avm-file-path> [-out <output-avm-file-path>] [<name>]+~n"
         "    * help  print this help"
@@ -345,7 +469,7 @@ print_help() ->
 %% @private
 do_create(Opts, Args) ->
     validate_args(create, Opts, Args),
-    ok = create(maps:get(output, Opts), Args),
+    ok = create(maps:get(output, Opts), Args, maps:get(prune, Opts, false)),
     0.
 
 %% @private
@@ -427,5 +551,7 @@ parse_args(["-out", Path|T], {Opts, Args}) ->
     parse_args(T, {Opts#{output => Path}, Args});
 parse_args(["-in", Path|T], {Opts, Args}) ->
     parse_args(T, {Opts#{input => Path}, Args});
+parse_args(["-prune"|T], {Opts, Args}) ->
+    parse_args(T, {Opts#{prune => true}, Args});
 parse_args([H|T], {Opts, Args}) ->
     parse_args(T, {Opts, [H|Args]}).
