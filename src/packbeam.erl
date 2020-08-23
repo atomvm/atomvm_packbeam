@@ -340,7 +340,7 @@ uncompress_literals(Chunks) ->
             UncompressedData = zlib:uncompress(Data),
             lists:keyreplace(
                 "LitT", 1, Chunks,
-                {"LitT", UncompressedData}
+                {"LitU", UncompressedData}
             )
     end.
 
