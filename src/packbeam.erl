@@ -24,7 +24,7 @@
 -module(packbeam).
 
 %% API exports
--export([create/3, create/2, list/1, delete/3]).
+-export([create/4, create/2, list/1, delete/3]).
 %% escript
 -export([main/1]).
 
@@ -61,7 +61,7 @@
 %%-----------------------------------------------------------------------------
 -spec create(path(), [path()]) -> ok | {error, Reason::term()}.
 create(OutputPath, InputPaths) ->
-    create(OutputPath, InputPaths, false).
+    create(OutputPath, InputPaths, false, undefined).
 
 %%-----------------------------------------------------------------------------
 %% @param   OutputPath the path to write the AVM file
@@ -78,9 +78,9 @@ create(OutputPath, InputPaths) ->
 %%          OutputPath, using the input files specified in InputPaths.
 %% @end
 %%-----------------------------------------------------------------------------
--spec create(path(), [path()], Prune::boolean()) -> ok | {error, Reason::term()}.
-create(OutputPath, InputPaths, Prune) ->
-    ParsedFiles = parse_files(InputPaths),
+-spec create(path(), [path()], Prune::boolean(), StartModule::module() | undefined) -> ok | {error, Reason::term()}.
+create(OutputPath, InputPaths, Prune, StartModule) ->
+    ParsedFiles = parse_files(InputPaths, StartModule),
     write_packbeam(OutputPath, case Prune of true -> prune(ParsedFiles); _ -> ParsedFiles end).
 
 %%-----------------------------------------------------------------------------
@@ -130,14 +130,20 @@ delete(OutputPath, InputPath, Names) ->
 %%
 
 %% @private
-parse_files(InputPaths) ->
-    lists:foldl(
+parse_files(InputPaths, StartModule) ->
+    Files = lists:foldl(
         fun(InputPath, Accum) ->
             Accum ++ parse_file(InputPath)
         end,
         [],
         InputPaths
-    ).
+    ),
+    case StartModule of
+        undefined ->
+            Files;
+        _ ->
+            reorder_start_module(StartModule, Files)
+    end.
 
 %% @private
 parse_file(InputPath) ->
@@ -291,6 +297,34 @@ parse_file(avm, InputPath, Data) ->
 parse_file(normal, InputPath, Data) ->
     DataSize = byte_size(Data),
     [[{module_name, InputPath}, {flags, 0}, {data, <<DataSize:32, Data/binary>>}]].
+
+%% @private
+reorder_start_module(StartModule, Files) ->
+    {StartProps, Other}  =
+        lists:partition(
+            fun(Props) ->
+                % io:format("Props: ~w~n", [Props]),
+                case proplists:get_value(module, Props) of
+                    StartModule ->
+                        Flags = proplists:get_value(flags, Props),
+                        BeamStartFlags = ?BEAM_CODE_FLAG bor ?BEAM_START_FLAG,
+                        case Flags band BeamStartFlags of
+                            BeamStartFlags -> true;
+                            _ ->
+                                throw({start_module_not_start_beam, StartModule})
+                        end;
+                    _ ->
+                        false
+                end
+            end,
+            Files
+        ),
+    case StartProps of
+        [] ->
+            throw({start_module_not_found, StartModule});
+        _ ->
+            StartProps ++ Other
+    end.
 
 %% @private
 parse_avm_data(AVMData) ->
@@ -449,66 +483,63 @@ print_help() ->
         "~n"
         "The following sub-commands are supported:"
         "~n"
-        "    * create -out <output-avm-file-path> [-prune] [<input-file>]+~n"
-        "    * list -in <input-avm-file-path>~n"
-        "    * delete -in <input-avm-file-path> [-out <output-avm-file-path>] [<name>]+~n"
-        "    * help  print this help"
+        "    create [-prune] [-start <module>] <output-avm-file> [<input-file>]+~n"
+        "    list <input-avm-file-path>~n"
+        "    delete [-out <output-avm-file-path>] <input-avm-file-path> [<name>]+~n"
+        "    help  print this help"
         "~n"
     ).
 
 %% @private
 do_create(Opts, Args) ->
     validate_args(create, Opts, Args),
-    ok = create(maps:get(output, Opts), Args, maps:get(prune, Opts, false)),
+    [OutputFile | InputFiles] = Args,
+    ok = create(OutputFile, InputFiles, maps:get(prune, Opts, false), maps:get(start, Opts, undefined)),
     0.
 
 %% @private
 do_list(Opts, Args) ->
     validate_args(list, Opts, Args),
-    Modules = list(maps:get(input, Opts)),
+    [InputFile | _] = Args,
+    Modules = list(InputFile),
     print_modules(Modules),
     0.
 
 %% @private
 do_delete(Opts, Args) ->
     validate_args(delete, Opts, Args),
-    delete(maps:get(output, Opts), maps:get(input, Opts, maps:get(output, Opts)), Args),
+    [InputFile | _] = Args,
+    OutputFile = maps:get(output, Opts, InputFile),
+    delete(OutputFile, InputFile, Args),
     0.
 
 %% @private
-validate_args(create, Opts, _Args) ->
-    case maps:find(output, Opts) of
-        error ->
-            throw(io_lib:format("Missing output option"));
-        {ok, OutputPath} ->
-            case filelib:is_dir(OutputPath) of
-                true ->
-                    throw(io_lib:format("Output file (~p) is a directory", [OutputPath]));
-                _ -> ok
-            end
+validate_args(create, _Opts, [OutputPath|_Rest] = _Args) ->
+    case filelib:is_dir(OutputPath) of
+        true ->
+            throw(io_lib:format("Output file (~p) is a directory", [OutputPath]));
+        _ -> ok
     end;
-validate_args(list, Opts, _Args) ->
-    case maps:find(input, Opts) of
-        error ->
-            throw(io_lib:format("Missing input option"));
-        {ok, InputPath} ->
-            case not filelib:is_file(InputPath) of
-                true ->
-                    throw(io_lib:format("Input file (~p) does not exist", [InputPath]));
-                _ -> ok
-            end
+validate_args(create, _Opts, [] = _Args) ->
+    throw("Missing output file option");
+%%
+validate_args(list, _Opts, [InputPath|_Rest] = _Args) ->
+    case not filelib:is_file(InputPath) of
+        true ->
+            throw(io_lib:format("Input file (~p) does not exist", [InputPath]));
+        _ -> ok
     end;
-validate_args(delete, Opts, _Args) ->
-    case maps:find(input, Opts) of
-        error ->
-            throw(io_lib:format("Missing input option"));
-        {ok, InputPath} ->
-            case not filelib:is_file(InputPath) of
-                true ->
-                    throw(io_lib:format("Input file (~p) does not exist", [InputPath]));
-                _ -> ok
-            end
-    end.
+validate_args(list, _Opts, [] = _Args) ->
+    throw("Missing input option");
+%%
+validate_args(delete, _Opts, [InputPath|_Rest] = _Args) ->
+    case not filelib:is_file(InputPath) of
+        true ->
+            throw(io_lib:format("Input file (~p) does not exist", [InputPath]));
+        _ -> ok
+    end;
+validate_args(delete, _Opts, [] = _Args) ->
+    throw("Missing input option").
 
 %% @private
 print_modules(Modules) ->
@@ -543,5 +574,7 @@ parse_args(["-in", Path|T], {Opts, Args}) ->
     parse_args(T, {Opts#{input => Path}, Args});
 parse_args(["-prune"|T], {Opts, Args}) ->
     parse_args(T, {Opts#{prune => true}, Args});
+parse_args(["-start", Module|T], {Opts, Args}) ->
+    parse_args(T, {Opts#{start => list_to_atom(Module)}, Args});
 parse_args([H|T], {Opts, Args}) ->
     parse_args(T, {Opts, [H|Args]}).
