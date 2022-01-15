@@ -26,7 +26,6 @@
         {modules, [packbeam]},
         {licenses, ["Apache 2.0"]},
         {pkg_name, "atomvm_packbeam"},
-        {links, [{"github", "https://github.com/fadushin/atomvm_packbeam"}]},
-        {links, []}
+        {links, [{"github", "https://github.com/fadushin/atomvm_packbeam"}]}
     ]
 }.
