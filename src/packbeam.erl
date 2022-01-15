@@ -224,7 +224,7 @@ get_imports(ParsedFile) ->
 
 %% @private
 get_atoms(ParsedFile) ->
-    proplists:get_value(atoms, proplists:get_value(chunk_refs, ParsedFile)).
+    [Atom || {_Index, Atom} <- proplists:get_value(atoms, proplists:get_value(chunk_refs, ParsedFile))].
 
 %% @private
 get_modules(ParsedFiles) ->
