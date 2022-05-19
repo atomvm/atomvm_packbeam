@@ -41,6 +41,7 @@
 ]).
 -define(BEAM_START_FLAG, 1).
 -define(BEAM_CODE_FLAG, 2).
+-define(NORMAL_FILE_FLAG, 4).
 
 -type path() :: string().
 -type parsed_file() :: [{string(), term()}].
@@ -296,7 +297,7 @@ parse_file(avm, InputPath, Data) ->
     end;
 parse_file(normal, InputPath, Data) ->
     DataSize = byte_size(Data),
-    [[{module_name, InputPath}, {flags, 0}, {data, <<DataSize:32, Data/binary>>}]].
+    [[{module_name, InputPath}, {flags, ?NORMAL_FILE_FLAG}, {data, <<DataSize:32, Data/binary>>}]].
 
 %% @private
 reorder_start_module(StartModule, Files) ->
