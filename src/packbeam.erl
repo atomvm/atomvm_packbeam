@@ -60,7 +60,7 @@
 %%          Equivalent to create(OutputPath, InputPaths, false).
 %% @end
 %%-----------------------------------------------------------------------------
--spec create(path(), [path()]) -> ok | {error, Reason::term()}.
+-spec create(path(), [path()]) -> ok | {error, Reason :: term()}.
 create(OutputPath, InputPaths) ->
     create(OutputPath, InputPaths, false, undefined).
 
@@ -79,10 +79,17 @@ create(OutputPath, InputPaths) ->
 %%          OutputPath, using the input files specified in InputPaths.
 %% @end
 %%-----------------------------------------------------------------------------
--spec create(path(), [path()], Prune::boolean(), StartModule::module() | undefined) -> ok | {error, Reason::term()}.
+-spec create(path(), [path()], Prune :: boolean(), StartModule :: module() | undefined) ->
+    ok | {error, Reason :: term()}.
 create(OutputPath, InputPaths, Prune, StartModule) ->
     ParsedFiles = parse_files(InputPaths, StartModule),
-    write_packbeam(OutputPath, case Prune of true -> prune(ParsedFiles); _ -> ParsedFiles end).
+    write_packbeam(
+        OutputPath,
+        case Prune of
+            true -> prune(ParsedFiles);
+            _ -> ParsedFiles
+        end
+    ).
 
 %%-----------------------------------------------------------------------------
 %% @param   InputPath the AVM file from which to list elements
@@ -116,7 +123,7 @@ list(InputPath) ->
 %%          is written to OutputPath, which may be the same as InputPath.
 %% @end
 %%-----------------------------------------------------------------------------
--spec delete(path(), path(), [path()]) -> ok | {error, Reason::term()}.
+-spec delete(path(), path(), [path()]) -> ok | {error, Reason :: term()}.
 delete(OutputPath, InputPath, Names) ->
     case file_type(InputPath) of
         avm ->
@@ -153,18 +160,20 @@ parse_file(InputPath) ->
 %% @private
 file_type(InputPath) ->
     case ends_with(InputPath, ".beam") of
-        true -> beam;
+        true ->
+            beam;
         _ ->
             case ends_with(InputPath, ".avm") of
                 true -> avm;
-                _ ->    normal
+                _ -> normal
             end
     end.
 
 %% @private
 load_file(Path) ->
     case file:read_file(Path) of
-        {ok, Data} -> Data;
+        {ok, Data} ->
+            Data;
         {error, Reason} ->
             throw(io_lib:format("Unable to load file ~s.  Reason: ~p", [Path, Reason]))
     end.
@@ -204,10 +213,11 @@ closure(Current, Candidates, Accum) ->
     lists:foldl(
         fun(DepModule, A) ->
             case lists:member(DepModule, A) of
-                true -> A;
+                true ->
+                    A;
                 _ ->
                     NewCandidates = remove(DepModule, Candidates),
-                    closure(get_parsed_file(DepModule, Candidates), NewCandidates, [DepModule|A])
+                    closure(get_parsed_file(DepModule, Candidates), NewCandidates, [DepModule | A])
             end
         end,
         Accum,
@@ -225,7 +235,10 @@ get_imports(ParsedFile) ->
 
 %% @private
 get_atoms(ParsedFile) ->
-    [Atom || {_Index, Atom} <- proplists:get_value(atoms, proplists:get_value(chunk_refs, ParsedFile))].
+    [
+        Atom
+     || {_Index, Atom} <- proplists:get_value(atoms, proplists:get_value(chunk_refs, ParsedFile))
+    ].
 
 %% @private
 get_modules(ParsedFiles) ->
@@ -242,7 +255,8 @@ get_parsed_file(Module, ParsedFiles) ->
             proplists:get_value(module, ParsedFile) =:= Module
         end,
         ParsedFiles
-    ), V.
+    ),
+    V.
 
 %% @private
 intersection(A, B) ->
@@ -275,19 +289,22 @@ parse_file(beam, _InputPath, Data) ->
     {ok, Binary} = beam_lib:build_module(FilteredChunks),
     {ok, {Module, ChunkRefs}} = beam_lib:chunks(Data, [imports, exports, atoms]),
     Exports = proplists:get_value(exports, ChunkRefs),
-    Flags = case lists:member({start, 0}, Exports) of
-        true ->
-            ?BEAM_CODE_FLAG bor ?BEAM_START_FLAG;
-        _ ->
-            ?BEAM_CODE_FLAG
-    end,
-    [[
-        {module, Module},
-        {module_name, io_lib:format("~s.beam", [atom_to_list(Module)])},
-        {flags, Flags},
-        {data, Binary},
-        {chunk_refs, ChunkRefs}
-    ]];
+    Flags =
+        case lists:member({start, 0}, Exports) of
+            true ->
+                ?BEAM_CODE_FLAG bor ?BEAM_START_FLAG;
+            _ ->
+                ?BEAM_CODE_FLAG
+        end,
+    [
+        [
+            {module, Module},
+            {module_name, io_lib:format("~s.beam", [atom_to_list(Module)])},
+            {flags, Flags},
+            {data, Binary},
+            {chunk_refs, ChunkRefs}
+        ]
+    ];
 parse_file(avm, InputPath, Data) ->
     case Data of
         <<?AVM_HEADER, AVMData/binary>> ->
@@ -301,7 +318,7 @@ parse_file(normal, InputPath, Data) ->
 
 %% @private
 reorder_start_module(StartModule, Files) ->
-    {StartProps, Other}  =
+    {StartProps, Other} =
         lists:partition(
             fun(Props) ->
                 % io:format("Props: ~w~n", [Props]),
@@ -311,8 +328,7 @@ reorder_start_module(StartModule, Files) ->
                         BeamStartFlags = ?BEAM_CODE_FLAG bor ?BEAM_START_FLAG,
                         case Flags band BeamStartFlags of
                             BeamStartFlags -> true;
-                            _ ->
-                                throw({start_module_not_start_beam, StartModule})
+                            _ -> throw({start_module_not_start_beam, StartModule})
                         end;
                     _ ->
                         false
@@ -344,7 +360,11 @@ parse_avm_data(<<Size:32/integer, AVMRest/binary>>, Accum) ->
             Beam = parse_beam(AVMBeamData, [], in_header, []),
             parse_avm_data(AVMNext, [Beam | Accum]);
         _ ->
-            throw(io_lib:format("Invalid AVM data size: ~p (AVMRest=~p)", [Size, erlang:byte_size(AVMRest)]))
+            throw(
+                io_lib:format("Invalid AVM data size: ~p (AVMRest=~p)", [
+                    Size, erlang:byte_size(AVMRest)
+                ])
+            )
     end.
 
 %% @private
@@ -353,7 +373,7 @@ parse_beam(<<Flags:32, _Reserved:32, Rest/binary>>, [], in_header, Accum) ->
 parse_beam(<<0:8, Rest/binary>>, Tmp, in_module_name, Accum) ->
     parse_beam(Rest, [], eat_padding, [{module_name, lists:reverse(Tmp)} | Accum]);
 parse_beam(<<C:8, Rest/binary>>, Tmp, in_module_name, Accum) ->
-    parse_beam(Rest, [C|Tmp], in_module_name, Accum);
+    parse_beam(Rest, [C | Tmp], in_module_name, Accum);
 parse_beam(<<0:8, Rest/binary>>, Tmp, eat_padding, Accum) ->
     parse_beam(Rest, Tmp, eat_padding, Accum);
 parse_beam(Data, _Tmp, eat_padding, Accum) ->
@@ -374,15 +394,18 @@ uncompress_literals(Chunks) ->
         <<_Header:4/binary, Data/binary>> ->
             UncompressedData = zlib:uncompress(Data),
             lists:keyreplace(
-                "LitT", 1, Chunks,
+                "LitT",
+                1,
+                Chunks,
                 {"LitU", UncompressedData}
             )
     end.
 
 %% @private
 write_packbeam(OutputFilePath, ParsedFiles) ->
-    PackedData = [<<?AVM_HEADER>> | [pack_data(ParsedFile) || ParsedFile <- ParsedFiles]]
-                    ++ [create_header(0, 0, <<"end">>)],
+    PackedData =
+        [<<?AVM_HEADER>> | [pack_data(ParsedFile) || ParsedFile <- ParsedFiles]] ++
+            [create_header(0, 0, <<"end">>)],
     file:write_file(OutputFilePath, PackedData).
 
 %% @private
@@ -446,7 +469,7 @@ main(Argv) ->
             print_help(),
             erlang:halt(255);
         _ ->
-            [Command|ArgsRest] = Args,
+            [Command | ArgsRest] = Args,
             try
                 case Command of
                     "create" ->
@@ -495,7 +518,9 @@ print_help() ->
 do_create(Opts, Args) ->
     validate_args(create, Opts, Args),
     [OutputFile | InputFiles] = Args,
-    ok = create(OutputFile, InputFiles, maps:get(prune, Opts, false), maps:get(start, Opts, undefined)),
+    ok = create(
+        OutputFile, InputFiles, maps:get(prune, Opts, false), maps:get(start, Opts, undefined)
+    ),
     0.
 
 %% @private
@@ -515,29 +540,32 @@ do_delete(Opts, Args) ->
     0.
 
 %% @private
-validate_args(create, _Opts, [OutputPath|_Rest] = _Args) ->
+validate_args(create, _Opts, [OutputPath | _Rest] = _Args) ->
     case filelib:is_dir(OutputPath) of
         true ->
             throw(io_lib:format("Output file (~p) is a directory", [OutputPath]));
-        _ -> ok
+        _ ->
+            ok
     end;
 validate_args(create, _Opts, [] = _Args) ->
     throw("Missing output file option");
 %%
-validate_args(list, _Opts, [InputPath|_Rest] = _Args) ->
+validate_args(list, _Opts, [InputPath | _Rest] = _Args) ->
     case not filelib:is_file(InputPath) of
         true ->
             throw(io_lib:format("Input file (~p) does not exist", [InputPath]));
-        _ -> ok
+        _ ->
+            ok
     end;
 validate_args(list, _Opts, [] = _Args) ->
     throw("Missing input option");
 %%
-validate_args(delete, _Opts, [InputPath|_Rest] = _Args) ->
+validate_args(delete, _Opts, [InputPath | _Rest] = _Args) ->
     case not filelib:is_file(InputPath) of
         true ->
             throw(io_lib:format("Input file (~p) does not exist", [InputPath]));
-        _ -> ok
+        _ ->
+            ok
     end;
 validate_args(delete, _Opts, [] = _Args) ->
     throw("Missing input option").
@@ -557,7 +585,10 @@ print_module(ParsedFile) ->
     io:format(
         "~s~s [~p]~n", [
             ModuleName,
-            case Flags band ?BEAM_START_FLAG of ?BEAM_START_FLAG -> " *"; _ -> "" end,
+            case Flags band ?BEAM_START_FLAG of
+                ?BEAM_START_FLAG -> " *";
+                _ -> ""
+            end,
             byte_size(Data)
         ]
     ).
@@ -569,13 +600,13 @@ parse_args(Argv) ->
 %% @private
 parse_args([], {Opts, Args}) ->
     {Opts, lists:reverse(Args)};
-parse_args(["-out", Path|T], {Opts, Args}) ->
+parse_args(["-out", Path | T], {Opts, Args}) ->
     parse_args(T, {Opts#{output => Path}, Args});
-parse_args(["-in", Path|T], {Opts, Args}) ->
+parse_args(["-in", Path | T], {Opts, Args}) ->
     parse_args(T, {Opts#{input => Path}, Args});
-parse_args(["-prune"|T], {Opts, Args}) ->
+parse_args(["-prune" | T], {Opts, Args}) ->
     parse_args(T, {Opts#{prune => true}, Args});
-parse_args(["-start", Module|T], {Opts, Args}) ->
+parse_args(["-start", Module | T], {Opts, Args}) ->
     parse_args(T, {Opts#{start => list_to_atom(Module)}, Args});
-parse_args([H|T], {Opts, Args}) ->
-    parse_args(T, {Opts, [H|Args]}).
+parse_args([H | T], {Opts, Args}) ->
+    parse_args(T, {Opts, [H | Args]}).
