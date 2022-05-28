@@ -185,7 +185,7 @@ prune(ParsedFiles) ->
             throw("No input beam files contain start/0 entrypoint");
         {value, Entrypoint} ->
             BeamFiles = lists:filter(fun is_beam/1, ParsedFiles),
-            Modules = closure(Entrypoint, BeamFiles -- [Entrypoint], [get_module(Entrypoint)]),
+            Modules = closure(Entrypoint, BeamFiles, [get_module(Entrypoint)]),
             filter_modules(Modules, ParsedFiles)
     end.
 
@@ -235,10 +235,41 @@ get_imports(ParsedFile) ->
 
 %% @private
 get_atoms(ParsedFile) ->
-    [
-        Atom
-     || {_Index, Atom} <- proplists:get_value(atoms, proplists:get_value(chunk_refs, ParsedFile))
-    ].
+    AtomsT = [
+        Atom || {_Index, Atom} <- proplists:get_value(atoms, proplists:get_value(chunk_refs, ParsedFile))
+    ],
+    AtomsFromLiterals = get_atom_literals(proplists:get_value(uncompressed_literals, ParsedFile)),
+    lists:usort(AtomsT ++ AtomsFromLiterals).
+
+%% @private
+get_atom_literals(undefined) ->
+    [];
+get_atom_literals(UncompressedLiterals) ->
+    <<NumLiterals:32, Rest/binary>> = UncompressedLiterals,
+    get_atom_literals(NumLiterals, Rest, []).
+
+%% @private
+get_atom_literals(0, <<"">>, Accum) ->
+    Accum;
+get_atom_literals(I, Data, Accum) ->
+    <<Length:32, StartData/binary>> = Data,
+    <<EncodedLiteral:Length/binary, Rest/binary>> = StartData,
+    Literal = binary_to_term(EncodedLiteral),
+    ExtractedAtoms = extract_atoms(Literal, []),
+    get_atom_literals(I - 1, Rest, ExtractedAtoms ++ Accum).
+
+%% @private
+extract_atoms(Term, Accum) when is_atom(Term) ->
+    [Term|Accum];
+extract_atoms(Term, Accum) when is_tuple(Term) ->
+    extract_atoms(tuple_to_list(Term), Accum);
+extract_atoms(Term, Accum) when is_map(Term) ->
+    extract_atoms(maps:to_list(Term), Accum);
+extract_atoms([H|T], Accum) ->
+    HeadAtoms = extract_atoms(H, Accum),
+    extract_atoms(T, HeadAtoms ++ Accum);
+extract_atoms(_Term, Accum) ->
+    Accum.
 
 %% @private
 get_modules(ParsedFiles) ->
@@ -284,7 +315,7 @@ filter_modules(Modules, ParsedFiles) ->
 %% @private
 parse_file(beam, _InputPath, Data) ->
     {ok, Module, Chunks} = beam_lib:all_chunks(Data),
-    UncompressedChunks = uncompress_literals(Chunks),
+    {UncompressedChunks, UncompressedLiterals} = uncompress_literals(Chunks),
     FilteredChunks = filter_chunks(UncompressedChunks),
     {ok, Binary} = beam_lib:build_module(FilteredChunks),
     {ok, {Module, ChunkRefs}} = beam_lib:chunks(Data, [imports, exports, atoms]),
@@ -302,7 +333,8 @@ parse_file(beam, _InputPath, Data) ->
             {module_name, io_lib:format("~s.beam", [atom_to_list(Module)])},
             {flags, Flags},
             {data, Binary},
-            {chunk_refs, ChunkRefs}
+            {chunk_refs, ChunkRefs},
+            {uncompressed_literals, UncompressedLiterals}
         ]
     ];
 parse_file(avm, InputPath, Data) ->
@@ -390,15 +422,18 @@ parse_beam(Data, _Tmp, eat_padding, Accum) ->
 uncompress_literals(Chunks) ->
     case proplists:get_value("LitT", Chunks) of
         undefined ->
-            Chunks;
+            {Chunks, undefined};
         <<_Header:4/binary, Data/binary>> ->
             UncompressedData = zlib:uncompress(Data),
-            lists:keyreplace(
-                "LitT",
-                1,
-                Chunks,
-                {"LitU", UncompressedData}
-            )
+            {
+                lists:keyreplace(
+                    "LitT",
+                    1,
+                    Chunks,
+                    {"LitU", UncompressedData}
+                ),
+                UncompressedData
+            }
     end.
 
 %% @private

@@ -13,3 +13,7 @@ escript:
 
 edoc:
 	rebar3 edoc
+
+etest:
+	rebar3 eunit --cover
+	rebar3 cover --verbose
