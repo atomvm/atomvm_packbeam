@@ -194,13 +194,16 @@ find_entrypoint(ParsedFiles) ->
     lists:search(fun is_entrypoint/1, ParsedFiles).
 
 %% @private
+is_entrypoint(Flags) when is_integer(Flags) ->
+    Flags band ?BEAM_START_FLAG =:= ?BEAM_START_FLAG;
 is_entrypoint(ParsedFile) ->
-    StartBeam = ?BEAM_START_FLAG bor ?BEAM_CODE_FLAG,
-    (proplists:get_value(flags, ParsedFile) band StartBeam) =:= StartBeam.
+    is_entrypoint(proplists:get_value(flags, ParsedFile)).
 
 %% @private
+is_beam(Flags) when is_integer(Flags) ->
+    Flags band ?BEAM_CODE_FLAG =:= ?BEAM_CODE_FLAG;
 is_beam(ParsedFile) ->
-    (proplists:get_value(flags, ParsedFile) band ?BEAM_CODE_FLAG) =:= ?BEAM_CODE_FLAG.
+    is_beam(proplists:get_value(flags, ParsedFile)).
 
 %% @private
 closure(_Current, [], Accum) ->
@@ -357,9 +360,8 @@ reorder_start_module(StartModule, Files) ->
                 case proplists:get_value(module, Props) of
                     StartModule ->
                         Flags = proplists:get_value(flags, Props),
-                        BeamStartFlags = ?BEAM_CODE_FLAG bor ?BEAM_START_FLAG,
-                        case Flags band BeamStartFlags of
-                            BeamStartFlags -> true;
+                        case is_entrypoint(Flags) of
+                            true -> true;
                             _ -> throw({start_module_not_start_beam, StartModule})
                         end;
                     _ ->
@@ -410,8 +412,8 @@ parse_beam(<<0:8, Rest/binary>>, Tmp, eat_padding, Accum) ->
     parse_beam(Rest, Tmp, eat_padding, Accum);
 parse_beam(Data, _Tmp, eat_padding, Accum) ->
     Flags = proplists:get_value(flags, Accum),
-    case Flags band ?BEAM_CODE_FLAG of
-        ?BEAM_CODE_FLAG ->
+    case is_beam(Flags) orelse is_entrypoint(Flags) of
+        true ->
             {ok, {Module, ChunkRefs}} = beam_lib:chunks(Data, [imports, exports, atoms]),
             [{module, Module}, {chunk_refs, ChunkRefs}, {data, Data} | Accum];
         _ ->
