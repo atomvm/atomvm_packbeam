@@ -269,7 +269,7 @@ extract_atoms(Term, Accum) when is_tuple(Term) ->
 extract_atoms(Term, Accum) when is_map(Term) ->
     extract_atoms(maps:to_list(Term), Accum);
 extract_atoms([H|T], Accum) ->
-    HeadAtoms = extract_atoms(H, Accum),
+    HeadAtoms = extract_atoms(H, []),
     extract_atoms(T, HeadAtoms ++ Accum);
 extract_atoms(_Term, Accum) ->
     Accum.
