@@ -4,7 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.4.1]
+
+- Fixed a bug that failed to track atoms that occur in BEAM LitT tables
+- Added unit tests
+- Weakened the test for finding a start BEAM file such that it only requires that the `?BEAM_START_FLAG` be set, for compatibility with [ExAtomVM](https://github.com/atomvm/ExAtomVM).
+
+## [0.4.0]
 
 ### Added
 - Added `erlfmt` plugin and formatted code.
