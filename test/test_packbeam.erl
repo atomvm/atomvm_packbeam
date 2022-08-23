@@ -16,6 +16,7 @@
 %%
 -module(test_packbeam).
 
+-include_lib("proper/include/proper.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 -define(BUILD_DIR, "_build/").
@@ -236,6 +237,32 @@ packbeam_src_fail_test() ->
 
     ok.
 
+packbeam_create_named_module_test() ->
+    AVMFile = dest_dir("packbeam_list_test.avm"),
+    ?assertMatch(ok,
+        packbeam:create(
+            AVMFile, [
+                test_beam_path("a.beam"),
+                test_beam_path("b.beam"),
+                test_beam_path("c.beam"),
+                test_beam_path("d.beam"),
+                {"test/priv/test.txt", "any/thing/you/want.txt"}
+            ]
+        )
+    ),
+
+    ParsedFiles = packbeam:list(AVMFile),
+
+    ?assert(is_list(ParsedFiles)),
+    ?assertEqual(length(ParsedFiles), 5),
+
+    [_AFile, _BFile, _CFile, _DFile, TextFile] = ParsedFiles,
+
+    ?assertNot(is_beam(TextFile)),
+    ?assertMatch("any/thing/you/want.txt", get_module_name(TextFile)),
+
+    ok.
+
 packbeam_list_test() ->
     AVMFile = dest_dir("packbeam_list_test.avm"),
     ?assertMatch(ok,
@@ -268,6 +295,50 @@ packbeam_list_test() ->
 
     ok.
 
+packbeam_create_dependent_avm_test() ->
+    AVMFile = dest_dir("packbeam_create_dependent_avm_test.avm"),
+    ?assertMatch(ok,
+        packbeam:create(
+            AVMFile, [
+                test_beam_path("a.beam"),
+                test_beam_path("b.beam"),
+                test_beam_path("c.beam"),
+                test_beam_path("d.beam"),
+                "test/priv/test.txt"
+            ]
+        )
+    ),
+    % io:format(user, "ParsedFiles1: ~p~n", [packbeam:list(AVMFile)]),
+
+    AVMFile2 = dest_dir("packbeam_create_dependent_avm_test2.avm"),
+    ?assertMatch(ok,
+        packbeam:create(
+            AVMFile2, [
+                test_beam_path("x.beam"),
+                AVMFile
+            ],
+            true,
+            x
+        )
+    ),
+
+    ParsedFiles = packbeam:list(AVMFile2),
+
+    ?assert(is_list(ParsedFiles)),
+    ?assertEqual(length(ParsedFiles), 5),
+
+    [FirstFile | _Rest] = ParsedFiles,
+    ?assertEqual(get_module(FirstFile), x),
+    ?assert(is_beam(FirstFile)),
+    ?assert(is_start(FirstFile)),
+
+    ?assert(parsed_file_contains_module(x, ParsedFiles)),
+    ?assert(parsed_file_contains_module(a, ParsedFiles)),
+    ?assert(parsed_file_contains_module(b, ParsedFiles)),
+    ?assert(parsed_file_contains_module(c, ParsedFiles)),
+
+    ok.
+
 %%
 %% helper functions
 %%
@@ -292,3 +363,11 @@ is_start(ParsedFile) ->
 
 is_beam(ParsedFile) ->
     proplists:get_value(flags, ParsedFile) band 16#02 == 16#02.
+
+parsed_file_contains_module(Module, ParsedFiles) ->
+    lists:any(
+        fun(ParsedFile) ->
+            get_module(ParsedFile) =:= Module
+        end,
+        ParsedFiles
+    ).
