@@ -3,7 +3,7 @@
 ## All rights reserved.
 ##
 
-all: compile escript edoc
+all: compile escript edoc etest
 
 compile:
 	rebar3 compile
@@ -16,4 +16,11 @@ edoc:
 
 etest:
 	rebar3 eunit --cover
+	rebar3 proper --cover
 	rebar3 cover --verbose
+
+clean:
+	rm -rf _build
+
+publish:
+	rebar3 hex publish
