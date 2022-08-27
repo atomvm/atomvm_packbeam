@@ -672,7 +672,7 @@ print_help() ->
         "The following sub-commands are supported:"
         "~n"
         "    create [-prune] [-start <module>] <output-avm-file> [<input-file>]+~n"
-        "    list <input-avm-file-path>~n"
+        "    list [-format csv|bare|default] <input-avm-file-path>~n"
         "    delete [-out <output-avm-file-path>] <input-avm-file-path> [<name>]+~n"
         "    help  print this help"
         "~n"
@@ -692,7 +692,7 @@ do_list(Opts, Args) ->
     validate_args(list, Opts, Args),
     [InputFile | _] = Args,
     Modules = list(InputFile),
-    print_modules(Modules),
+    print_modules(Modules, maps:get(format, Opts, undefined)),
     0.
 
 %% @private
@@ -735,14 +735,16 @@ validate_args(delete, _Opts, [] = _Args) ->
     throw("Missing input option").
 
 %% @private
-print_modules(Modules) ->
+print_modules(Modules, Format) ->
     lists:foreach(
-        fun print_module/1,
+        fun(Module) -> print_module(Module, Format) end,
         Modules
     ).
 
 %% @private
-print_module(ParsedFile) ->
+print_module(ParsedFile, undefined) ->
+    print_module(ParsedFile, "default");
+print_module(ParsedFile, "default") ->
     ModuleName = proplists:get_value(module_name, ParsedFile),
     Flags = proplists:get_value(flags, ParsedFile),
     Data = proplists:get_value(data, ParsedFile),
@@ -755,7 +757,27 @@ print_module(ParsedFile) ->
             end,
             byte_size(Data)
         ]
-    ).
+    );
+print_module(ParsedFile, "csv") ->
+    ModuleName = proplists:get_value(module_name, ParsedFile),
+    Data = proplists:get_value(data, ParsedFile),
+    io:format(
+        "~s,~p,~p,~p~n", [
+            ModuleName,
+            is_beam(ParsedFile),
+            is_entrypoint(ParsedFile),
+            byte_size(Data)
+        ]
+    );
+print_module(ParsedFile, "bare") ->
+    ModuleName = proplists:get_value(module_name, ParsedFile),
+    io:format(
+        "~s~n", [
+            ModuleName
+        ]
+    );
+print_module(_ParsedFile, Format) ->
+    throw({error, {unsupported_format, Format}}).
 
 %% @private
 parse_args(Argv) ->
@@ -772,6 +794,8 @@ parse_args(["-prune" | T], {Opts, Args}) ->
     parse_args(T, {Opts#{prune => true}, Args});
 parse_args(["-start", Module | T], {Opts, Args}) ->
     parse_args(T, {Opts#{start => list_to_atom(Module)}, Args});
+parse_args(["-format", Format | T], {Opts, Args}) ->
+    parse_args(T, {Opts#{format => Format}, Args});
 parse_args([H | T], {Opts, Args}) ->
     parse_args(T, {Opts, [H | Args]}).
 
