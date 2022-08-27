@@ -54,8 +54,8 @@ prop_simple_test() ->
             collect(
                 Modules,
                 begin
-                    ok = packbeam:create(AVMFile, Paths),
-                    ParsedFiles = packbeam:list(AVMFile),
+                    ok = packbeam_api:create(AVMFile, Paths),
+                    ParsedFiles = packbeam_api:list(AVMFile),
                     modules_and_parsed_files_are_equivalent(Modules, ParsedFiles)
                         andalso all_beam_modules_are_properly_named(ParsedFiles)
                         andalso maybe_contains_start_beam(Modules, a, ParsedFiles)

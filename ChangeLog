@@ -11,10 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added support for tracking dependencies using application spec files as binaries
 (API-only)
 - Added PropEr test
+- Added new `format` option to the `list` subcommand, supporting `csv`, `bare`,
+and `default` options.
 
 ### Fixed
 - Fixed a bug in parsing non-BEAM files in included AVM files, which would cause
   non-BEAM file contents to be loaded incorrectly.
+
+### Changed
+- Changed the command line syntax to support long and short option names using
+GNU-style conventions; deprecated single-hyphen short options.
+- Moved `packbeam` API functionality into `packbeam_api` module.
+Previous `packbeam` API functions now call corresponding `packbeam_api`
+functions and are deprecated.
 
 ## [0.4.1]
 

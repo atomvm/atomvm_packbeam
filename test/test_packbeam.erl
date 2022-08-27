@@ -24,7 +24,7 @@
 
 packbeam_create_simple_test() ->
     AVMFile = dest_dir("packbeam_create_simple_test.avm"),
-    ?assertMatch(ok, packbeam:create(
+    ?assertMatch(ok, packbeam_api:create(
         AVMFile, [
             test_beam_path("a.beam"),
             test_beam_path("b.beam"),
@@ -34,7 +34,7 @@ packbeam_create_simple_test() ->
         ])
     ),
 
-    ParsedFiles = packbeam:list(AVMFile),
+    ParsedFiles = packbeam_api:list(AVMFile),
 
     ?assert(is_list(ParsedFiles)),
     ?assertEqual(length(ParsedFiles), 5),
@@ -75,7 +75,7 @@ packbeam_create_simple_test() ->
 packbeam_create_start_test() ->
     AVMFile = dest_dir("packbeam_create_start_test.avm"),
     ?assertMatch(ok,
-        packbeam:create(
+        packbeam_api:create(
             AVMFile, [
                 test_beam_path("a.beam"),
                 test_beam_path("b.beam"),
@@ -88,7 +88,7 @@ packbeam_create_start_test() ->
         )
     ),
 
-    ParsedFiles = packbeam:list(AVMFile),
+    ParsedFiles = packbeam_api:list(AVMFile),
 
     ?assert(is_list(ParsedFiles)),
     ?assertEqual(length(ParsedFiles), 5),
@@ -108,7 +108,7 @@ packbeam_create_start_test() ->
 packbeam_create_prune_test() ->
     AVMFile = dest_dir("packbeam_create_prune_test.avm"),
     ?assertMatch(ok,
-        packbeam:create(
+        packbeam_api:create(
             AVMFile, [
                 test_beam_path("a.beam"),
                 test_beam_path("b.beam"),
@@ -123,7 +123,7 @@ packbeam_create_prune_test() ->
         )
     ),
 
-    ParsedFiles = packbeam:list(AVMFile),
+    ParsedFiles = packbeam_api:list(AVMFile),
 
     ?assert(is_list(ParsedFiles)),
     ?assertEqual(length(ParsedFiles), 5),
@@ -164,7 +164,7 @@ packbeam_create_prune_test() ->
 packbeam_prune_no_start_module_test() ->
     AVMFile = dest_dir("packbeam_prune_no_start_module_test.avm"),
     ?assertException(throw, _Term,
-        packbeam:create(
+        packbeam_api:create(
             AVMFile, [
                 test_beam_path("d.beam"),
                 test_beam_path("e.beam"),
@@ -181,7 +181,7 @@ packbeam_prune_no_start_module_test() ->
 
 packbeam_dest_fail_test() ->
     ?assertMatch({error, _},
-        packbeam:create(
+        packbeam_api:create(
             "/tmp", [
                 test_beam_path("a.beam"),
                 test_beam_path("b.beam"),
@@ -194,7 +194,7 @@ packbeam_dest_fail_test() ->
     ),
 
     ?assertMatch({error, _},
-        packbeam:create(
+        packbeam_api:create(
             "/usr/should_not_allowed.avm", [
                 test_beam_path("a.beam"),
                 test_beam_path("b.beam"),
@@ -207,7 +207,7 @@ packbeam_dest_fail_test() ->
     ),
 
     ?assertMatch({error, _},
-        packbeam:create(
+        packbeam_api:create(
             "/likely_doesnt_exist/should_fail.avm", [
                 test_beam_path("a.beam"),
                 test_beam_path("b.beam"),
@@ -223,7 +223,7 @@ packbeam_dest_fail_test() ->
 
 packbeam_src_fail_test() ->
     ?assertException(throw, _Term,
-        packbeam:create(
+        packbeam_api:create(
             dest_dir("packbeam_src_fail_test.avm"), [
                 test_beam_path("a.beam"),
                 test_beam_path("b.beam"),
@@ -240,7 +240,7 @@ packbeam_src_fail_test() ->
 packbeam_create_named_module_test() ->
     AVMFile = dest_dir("packbeam_list_test.avm"),
     ?assertMatch(ok,
-        packbeam:create(
+        packbeam_api:create(
             AVMFile, [
                 test_beam_path("a.beam"),
                 test_beam_path("b.beam"),
@@ -251,7 +251,7 @@ packbeam_create_named_module_test() ->
         )
     ),
 
-    ParsedFiles = packbeam:list(AVMFile),
+    ParsedFiles = packbeam_api:list(AVMFile),
 
     ?assert(is_list(ParsedFiles)),
     ?assertEqual(length(ParsedFiles), 5),
@@ -266,7 +266,7 @@ packbeam_create_named_module_test() ->
 packbeam_list_test() ->
     AVMFile = dest_dir("packbeam_list_test.avm"),
     ?assertMatch(ok,
-        packbeam:create(
+        packbeam_api:create(
             AVMFile, [
                 test_beam_path("a.beam"),
                 test_beam_path("b.beam"),
@@ -279,18 +279,18 @@ packbeam_list_test() ->
         )
     ),
 
-    packbeam:list(AVMFile),
+    packbeam_api:list(AVMFile),
 
     ?assertException(throw, _Term,
-        packbeam:list(test_beam_path("d.beam"))
+        packbeam_api:list(test_beam_path("d.beam"))
     ),
 
     ?assertException(throw, _Term,
-        packbeam:list("/usr")
+        packbeam_api:list("/usr")
     ),
 
     ?assertException(throw, _Term,
-        packbeam:list("/should_not_exist.txt")
+        packbeam_api:list("/should_not_exist.txt")
     ),
 
     ok.
@@ -298,7 +298,7 @@ packbeam_list_test() ->
 packbeam_create_dependent_avm_test() ->
     AVMFile = dest_dir("packbeam_create_dependent_avm_test.avm"),
     ?assertMatch(ok,
-        packbeam:create(
+        packbeam_api:create(
             AVMFile, [
                 test_beam_path("a.beam"),
                 test_beam_path("b.beam"),
@@ -308,11 +308,11 @@ packbeam_create_dependent_avm_test() ->
             ]
         )
     ),
-    % io:format(user, "ParsedFiles1: ~p~n", [packbeam:list(AVMFile)]),
+    % io:format(user, "ParsedFiles1: ~p~n", [packbeam_api:list(AVMFile)]),
 
     AVMFile2 = dest_dir("packbeam_create_dependent_avm_test2.avm"),
     ?assertMatch(ok,
-        packbeam:create(
+        packbeam_api:create(
             AVMFile2, [
                 test_beam_path("x.beam"),
                 AVMFile
@@ -322,7 +322,7 @@ packbeam_create_dependent_avm_test() ->
         )
     ),
 
-    ParsedFiles = packbeam:list(AVMFile2),
+    ParsedFiles = packbeam_api:list(AVMFile2),
 
     ?assert(is_list(ParsedFiles)),
     ?assertEqual(length(ParsedFiles), 5),
