@@ -16,17 +16,17 @@
 %%
 
 %%-----------------------------------------------------------------------------
-%% @doc An escript and OTP library used to generate an
+%% @doc A library used to generate an
 %% <a href="http://github.com/bettio/AtomVM">AtomVM</a> AVM file from a set of
 %% files (beam files, previously built AVM files, or even arbitrary data files).
 %% @end
 %%-----------------------------------------------------------------------------
--module(packbeam).
+-module(packbeam_api).
 
 %% API exports
 -export([create/2, create/4, create/5, list/1, delete/3]).
-%% escript
--export([main/1]).
+%% internally shared API
+-export([is_beam/1, is_entrypoint/1]).
 
 -define(AVM_HEADER,
     16#23, 16#21, 16#2f, 16#75,
@@ -60,24 +60,12 @@
 %%          Equivalent to create(OutputPath, InputPaths, false).
 %% @end
 %%-----------------------------------------------------------------------------
--spec create(path(), [path()]) -> ok | {error, Reason :: term()}.
+-spec create(
+    OutputPath ::path(),
+    InputPaths :: [path()]
+) -> ok | {error, Reason :: term()}.
 create(OutputPath, InputPaths) ->
     create(OutputPath, InputPaths, undefined, false, undefined).
-
-%%-----------------------------------------------------------------------------
-%% @param   OutputPath the path to write the AVM file
-%% @param   InputPaths a list of paths of beam files, AVM files, or normal data files
-%% @returns ok if the file was created.
-%% @throws  Reason::string()
-%% @doc     Create an AVM file.
-%%
-%%          Equivalent to create(OutputPath, InputPaths, undefined, Prune, StartModule).
-%% @end
-%%-----------------------------------------------------------------------------
--spec create(path(), [path()], Prune :: boolean(), StartModule :: module() | undefined) ->
-    ok | {error, Reason :: term()}.
-create(OutputPath, InputPaths, Prune, StartModule) ->
-    create(OutputPath, InputPaths, undefined, Prune, StartModule).
 
 %%-----------------------------------------------------------------------------
 %% @param   OutputPath the path to write the AVM file
@@ -86,6 +74,40 @@ create(OutputPath, InputPaths, Prune, StartModule) ->
 %%          in the output AVM file.  With pruning, then packbeam will attempt to
 %%          determine which BEAM files are needed to run the application, depending
 %%          on which modules are (transitively) referenced from the AVM entrypoint.
+%% @param   StartModule if `undefined', then this parameter is a module that
+%%          is intended to the the start module for the application.  This module
+%%          will occur first in the generated AVM file.
+%% @returns ok if the file was created.
+%% @throws  Reason::string()
+%% @doc     Create an AVM file.
+%%
+%%          Equivalent to create(OutputPath, InputPaths, undefined, Prune, StartModule).
+%% @end
+%%-----------------------------------------------------------------------------
+-spec create(
+    OutputPath ::path(),
+    InputPaths :: [path()],
+    Prune :: boolean(),
+    StartModule :: module() | undefined
+
+) ->
+    ok | {error, Reason :: term()}.
+create(OutputPath, InputPaths, Prune, StartModule) ->
+    create(OutputPath, InputPaths, undefined, Prune, StartModule).
+
+%%-----------------------------------------------------------------------------
+%% @param   OutputPath the path to write the AVM file
+%% @param   InputPaths a list of paths of beam files, AVM files, or normal data files
+%% @param   ApplicationModule If not `undefined', then this parameter designates
+%%          the name of an OTP application, from which additional dependencies
+%%          will be computed.
+%% @param   Prune whether to prune the archive.  Without pruning, all found BEAM files are included
+%%          in the output AVM file.  With pruning, then packbeam will attempt to
+%%          determine which BEAM files are needed to run the application, depending
+%%          on which modules are (transitively) referenced from the AVM entrypoint.
+%% @param   StartModule if `undefined', then this parameter is a module that
+%%          is intended to the the start module for the application.  This module
+%%          will occur first in the generated AVM file.
 %% @returns ok if the file was created.
 %% @throws  Reason::string()
 %% @doc     Create an AVM file.
@@ -94,7 +116,13 @@ create(OutputPath, InputPaths, Prune, StartModule) ->
 %%          OutputPath, using the input files specified in InputPaths.
 %% @end
 %%-----------------------------------------------------------------------------
--spec create(path(), [path()], module() | undefined, Prune :: boolean(), StartModule :: module() | undefined) ->
+-spec create(
+    OutputPath ::path(),
+    InputPaths :: [path()],
+    ApplicationModule :: module() | undefined,
+    Prune :: boolean(),
+    StartModule :: module() | undefined
+) ->
     ok | {error, Reason :: term()}.
 create(OutputPath, InputPaths, ApplicationModule, Prune, StartModule) ->
     ParsedFiles = parse_files(InputPaths, StartModule),
@@ -116,7 +144,7 @@ create(OutputPath, InputPaths, ApplicationModule, Prune, StartModule) ->
 %%          location specified in InputPath.
 %% @end
 %%-----------------------------------------------------------------------------
--spec list(path()) -> [parsed_file()].
+-spec list(InputPath :: path()) -> [parsed_file()].
 list(InputPath) ->
     case file_type(InputPath) of
         avm ->
@@ -138,7 +166,11 @@ list(InputPath) ->
 %%          is written to OutputPath, which may be the same as InputPath.
 %% @end
 %%-----------------------------------------------------------------------------
--spec delete(path(), path(), [path()]) -> ok | {error, Reason :: term()}.
+-spec delete(
+    OutputPath :: path(),
+    InputPath :: path(),
+    Name :: [path()]
+) -> ok | {error, Reason :: term()}.
 delete(OutputPath, InputPath, Names) ->
     case file_type(InputPath) of
         avm ->
@@ -620,233 +652,6 @@ remove_names(Names, ParsedFiles) ->
         end,
         ParsedFiles
     ).
-
-%%
-%% escript entrypoint
-%%
-
-%% @hidden
-main(Argv) ->
-    {Opts, Args} = parse_args(Argv),
-    case length(Args) of
-        0 ->
-            print_help(),
-            erlang:halt(255);
-        _ ->
-            [Command | ArgsRest] = Args,
-            try
-                case Command of
-                    "create" ->
-                        erlang:halt(do_create(Opts, ArgsRest));
-                    "list" ->
-                        erlang:halt(do_list(Opts, ArgsRest));
-                    "delete" ->
-                        erlang:halt(do_delete(Opts, ArgsRest));
-                    "help" ->
-                        print_help(),
-                        erlang:halt(0);
-                    _ ->
-                        io:format("packbeam: command must be one of create|list|delete|help~n"),
-                        print_help(),
-                        erlang:halt(255)
-                end
-            catch
-                _:Exception:S ->
-                    io:format("packbeam: caught exception: ~p~n", [Exception]),
-                    io:format("Stacktrace: ~n~p~n", [S]),
-                    print_help(),
-                    erlang:halt(255)
-            end
-    end.
-
-%%
-%% escript internal functions
-%%
-
-%% @private
-print_help() ->
-    io:format(
-        "Syntax:~n"
-        "    packbeam <sub-command> <options> <args>~n"
-        "~n"
-        "The following sub-commands are supported:~n"
-        "~n"
-        "    create <options> <output-avm-file> [<input-file>]+~n"
-        "        where:~n"
-        "           <output-avm-file> is the output AVM file,~n"
-        "           [<input-file>]+ is a list of one or more input files,~n"
-        "           and <options> are among the following:~n"
-        "              [--prune|-p]           Prune dependencies~n"
-        "              [--start|-s <module>]  Start module~n"
-        "~n"
-        "    list <options> <avm-file>~n"
-        "        where:~n"
-        "           <avm-file> is an AVM file,~n"
-        "           and <options> are among the following:~n"
-        "               [--format|-f csv|bare|default]  Format output~n"
-        "~n"
-        "    delete <options> <avm-file> [<element>]+~n"
-        "        where:~n"
-        "           <avm-file> is an AVM file,~n"
-        "           [<element>]+ is a list of one or more elements to delete,~n"
-        "           and <options> are among the following:~n"
-        "               [-out <output-avm-file>]    Output AVM file~n"
-        "~n"
-        "    help  print this help"
-        "~n"
-    ).
-
-%% @private
-do_create(Opts, Args) ->
-    validate_args(create, Opts, Args),
-    [OutputFile | InputFiles] = Args,
-    ok = create(
-        OutputFile, InputFiles, undefined, maps:get(prune, Opts, false), maps:get(start, Opts, undefined)
-    ),
-    0.
-
-%% @private
-do_list(Opts, Args) ->
-    validate_args(list, Opts, Args),
-    [InputFile | _] = Args,
-    Modules = list(InputFile),
-    print_modules(Modules, maps:get(format, Opts, undefined)),
-    0.
-
-%% @private
-do_delete(Opts, Args) ->
-    validate_args(delete, Opts, Args),
-    [InputFile | _] = Args,
-    OutputFile = maps:get(output, Opts, InputFile),
-    delete(OutputFile, InputFile, Args),
-    0.
-
-%% @private
-validate_args(create, _Opts, [OutputPath | _Rest] = _Args) ->
-    case filelib:is_dir(OutputPath) of
-        true ->
-            throw(io_lib:format("Output file (~p) is a directory", [OutputPath]));
-        _ ->
-            ok
-    end;
-validate_args(create, _Opts, [] = _Args) ->
-    throw("Missing output file option");
-%%
-validate_args(list, _Opts, [InputPath | _Rest] = _Args) ->
-    case not filelib:is_file(InputPath) of
-        true ->
-            throw(io_lib:format("Input file (~p) does not exist", [InputPath]));
-        _ ->
-            ok
-    end;
-validate_args(list, _Opts, [] = _Args) ->
-    throw("Missing input option");
-%%
-validate_args(delete, _Opts, [InputPath | _Rest] = _Args) ->
-    case not filelib:is_file(InputPath) of
-        true ->
-            throw(io_lib:format("Input file (~p) does not exist", [InputPath]));
-        _ ->
-            ok
-    end;
-validate_args(delete, _Opts, [] = _Args) ->
-    throw("Missing input option").
-
-%% @private
-print_modules(Modules, "csv" = Format) ->
-    io:format("MODULE_NAME,IS_BEAM,IS_ENTRYPOINT,SIZE_BYTES~n"),
-    lists:foreach(
-        fun(Module) -> print_module(Module, Format) end,
-        Modules
-    );
-print_modules(Modules, Format) ->
-    lists:foreach(
-        fun(Module) -> print_module(Module, Format) end,
-        Modules
-    ).
-
-%% @private
-print_module(ParsedFile, undefined) ->
-    print_module(ParsedFile, "default");
-print_module(ParsedFile, "default") ->
-    ModuleName = proplists:get_value(module_name, ParsedFile),
-    Flags = proplists:get_value(flags, ParsedFile),
-    Data = proplists:get_value(data, ParsedFile),
-    io:format(
-        "~s~s [~p]~n", [
-            ModuleName,
-            case Flags band ?BEAM_START_FLAG of
-                ?BEAM_START_FLAG -> " *";
-                _ -> ""
-            end,
-            byte_size(Data)
-        ]
-    );
-print_module(ParsedFile, "csv") ->
-    ModuleName = proplists:get_value(module_name, ParsedFile),
-    Data = proplists:get_value(data, ParsedFile),
-    io:format(
-        "~s,~p,~p,~p~n", [
-            ModuleName,
-            is_beam(ParsedFile),
-            is_entrypoint(ParsedFile),
-            byte_size(Data)
-        ]
-    );
-print_module(ParsedFile, "bare") ->
-    ModuleName = proplists:get_value(module_name, ParsedFile),
-    io:format(
-        "~s~n", [
-            ModuleName
-        ]
-    );
-print_module(_ParsedFile, Format) ->
-    throw({error, {unsupported_format, Format}}).
-
-%% @private
-parse_args(Argv) ->
-    parse_args(Argv, {#{}, []}).
-
-%% @private
-parse_args([], {Opts, Args}) ->
-    {Opts, lists:reverse(Args)};
-parse_args(["-out", Path | T], {Opts, Args}) ->
-    io:format("WARNING.  Deprecated option.  Use --out instead.~n"),
-    parse_args(["--out", Path | T], {Opts, Args});
-parse_args(["-o", Path | T], {Opts, Args}) ->
-    parse_args(["--out", Path | T], {Opts, Args});
-parse_args(["--out", Path | T], {Opts, Args}) ->
-    parse_args(T, {Opts#{output => Path}, Args});
-parse_args(["-in", Path | T], {Opts, Args}) ->
-    io:format("WARNING.  Deprecated option.  Use --in instead.~n"),
-    parse_args(["--in", Path | T], {Opts, Args});
-parse_args(["-i", Path | T], {Opts, Args}) ->
-    parse_args(["--in", Path | T], {Opts, Args});
-parse_args(["--in", Path | T], {Opts, Args}) ->
-    parse_args(T, {Opts#{input => Path}, Args});
-parse_args(["-prune" | T], {Opts, Args}) ->
-    io:format("WARNING.  Deprecated option.  Use --prune instead.~n"),
-    parse_args(["--prune" | T], {Opts, Args});
-parse_args(["-p" | T], {Opts, Args}) ->
-    parse_args(["--prune" | T], {Opts, Args});
-parse_args(["--prune" | T], {Opts, Args}) ->
-    parse_args(T, {Opts#{prune => true}, Args});
-parse_args(["-start", Module | T], {Opts, Args}) ->
-    io:format("WARNING.  Deprecated option.  Use --start instead.~n"),
-    parse_args(["--start", Module | T], {Opts, Args});
-parse_args(["-s", Module | T], {Opts, Args}) ->
-    parse_args(["--start", Module | T], {Opts, Args});
-parse_args(["--start", Module | T], {Opts, Args}) ->
-    parse_args(T, {Opts#{start => list_to_atom(Module)}, Args});
-parse_args(["-format", Format | T], {Opts, Args}) ->
-    io:format("WARNING.  Deprecated option.  Use --format instead.~n"),
-    parse_args(["--format", Format | T], {Opts, Args});
-parse_args(["-f", Format | T], {Opts, Args}) ->
-    parse_args(["--format", Format | T], {Opts, Args});
-parse_args(["--format", Format | T], {Opts, Args}) ->
-    parse_args(T, {Opts#{format => Format}, Args});
-parse_args([H | T], {Opts, Args}) ->
-    parse_args(T, {Opts, [H | Args]}).
 
 %% @private
 deduplicate([]) ->
