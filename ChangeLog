@@ -4,10 +4,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [unreleased]
+
+### Added
+- Added ability to specify a module name for ordinary (non-BEAM) files (API-only).
+- Added support for tracking dependencies using application spec files as binaries
+(API-only)
+- Added PropEr test
+- Added new `format` option to the `list` subcommand, supporting `csv`, `bare`,
+and `default` options.
+
+### Fixed
+- Fixed a bug in parsing non-BEAM files in included AVM files, which would cause
+  non-BEAM file contents to be loaded incorrectly.
+
+### Changed
+- Changed the command line syntax to support long and short option names using
+GNU-style conventions; deprecated single-hyphen short options.
+- Moved `packbeam` API functionality into `packbeam_api` module.
+Previous `packbeam` API functions now call corresponding `packbeam_api`
+functions and are deprecated.
+
 ## [0.4.1]
 
-- Fixed a bug that failed to track atoms that occur in BEAM LitT tables
+### Added
 - Added unit tests
+
+### Fixed
+- Fixed a bug that failed to track atoms that occur in BEAM LitT tables
+
+### Changed
 - Weakened the test for finding a start BEAM file such that it only requires that the `?BEAM_START_FLAG` be set, for compatibility with [ExAtomVM](https://github.com/atomvm/ExAtomVM).
 
 ## [0.4.0]
