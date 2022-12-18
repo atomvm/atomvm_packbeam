@@ -24,7 +24,7 @@
 -module(packbeam_api).
 
 %% API exports
--export([create/2, create/4, create/5, list/1, delete/3]).
+-export([create/2, create/3, create/4, create/5, list/1, delete/3]).
 %% internally shared API
 -export([is_beam/1, is_entrypoint/1]).
 
@@ -45,6 +45,19 @@
 
 -type path() :: string().
 -type parsed_file() :: [{string(), term()}].
+- type options() :: #{
+    prune => boolean(),
+    start_module => module() | undefined,
+    application_module => module() | undefined,
+    include_lines => boolean()
+}.
+
+-define(DEFAULT_OPTIONS, #{
+    prune => false,
+    start_module => undefined,
+    application_module => undefined,
+    include_lines => false
+}).
 
 %%
 %% Public API
@@ -57,7 +70,15 @@
 %% @throws  Reason::string()
 %% @doc     Create an AVM file.
 %%
-%%          Equivalent to create(OutputPath, InputPaths, false).
+%%          Equivalent to `create(OutputPath, InputPaths, DefaultOptions)'
+%%
+%%          where `DefaultOptions' is `#{
+%%              prune => false,
+%%              start_module => undefined,
+%%              application_module => undefined,
+%%              include_lines => false
+%%          }'
+%%
 %% @end
 %%-----------------------------------------------------------------------------
 -spec create(
@@ -65,7 +86,40 @@
     InputPaths :: [path()]
 ) -> ok | {error, Reason :: term()}.
 create(OutputPath, InputPaths) ->
-    create(OutputPath, InputPaths, undefined, false, undefined).
+    create(OutputPath, InputPaths, ?DEFAULT_OPTIONS).
+
+%%-----------------------------------------------------------------------------
+%% @param   OutputPath the path to write the AVM file
+%% @param   InputPaths a list of paths of beam files, AVM files, or normal data files
+%% @param   Options creation options
+%% @returns ok if the file was created.
+%% @throws  Reason::string()
+%% @doc     Create an AVM file.
+%%
+%%          This function will create an AVM file at the location specified in
+%%          OutputPath, using the input files specified in InputPaths.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec create(
+    OutputPath ::path(),
+    InputPaths :: [path()],
+    Options :: options()
+) -> ok | {error, Reason :: term()}.
+create(OutputPath, InputPaths, Options) ->
+    #{
+        prune := Prune,
+        start_module := StartModule,
+        application_module := ApplicationModule,
+        include_lines := IncludeLines
+    } = Options,
+    ParsedFiles = parse_files(InputPaths, StartModule, IncludeLines),
+    write_packbeam(
+        OutputPath,
+        case Prune of
+            true -> prune(ParsedFiles, ApplicationModule);
+            _ -> ParsedFiles
+        end
+    ).
 
 %%-----------------------------------------------------------------------------
 %% @param   OutputPath the path to write the AVM file
@@ -79,6 +133,7 @@ create(OutputPath, InputPaths) ->
 %%          will occur first in the generated AVM file.
 %% @returns ok if the file was created.
 %% @throws  Reason::string()
+%% @deprecated This function is deprecated.  Use `create/3' instead.
 %% @doc     Create an AVM file.
 %%
 %%          Equivalent to create(OutputPath, InputPaths, undefined, Prune, StartModule).
@@ -89,11 +144,12 @@ create(OutputPath, InputPaths) ->
     InputPaths :: [path()],
     Prune :: boolean(),
     StartModule :: module() | undefined
-
 ) ->
     ok | {error, Reason :: term()}.
 create(OutputPath, InputPaths, Prune, StartModule) ->
-    create(OutputPath, InputPaths, undefined, Prune, StartModule).
+    io:format("WARNING: Deprecated function: ~p:create/4~n", [?MODULE]),
+    Options = #{prune => Prune, start_module => StartModule},
+    create(OutputPath, InputPaths, maps:merge(?DEFAULT_OPTIONS, Options)).
 
 %%-----------------------------------------------------------------------------
 %% @param   OutputPath the path to write the AVM file
@@ -110,6 +166,7 @@ create(OutputPath, InputPaths, Prune, StartModule) ->
 %%          will occur first in the generated AVM file.
 %% @returns ok if the file was created.
 %% @throws  Reason::string()
+%% @deprecated This function is deprecated.  Use `create/3' instead.
 %% @doc     Create an AVM file.
 %%
 %%          This function will create an AVM file at the location specified in
@@ -125,14 +182,9 @@ create(OutputPath, InputPaths, Prune, StartModule) ->
 ) ->
     ok | {error, Reason :: term()}.
 create(OutputPath, InputPaths, ApplicationModule, Prune, StartModule) ->
-    ParsedFiles = parse_files(InputPaths, StartModule),
-    write_packbeam(
-        OutputPath,
-        case Prune of
-            true -> prune(ParsedFiles, ApplicationModule);
-            _ -> ParsedFiles
-        end
-    ).
+    io:format("WARNING: Deprecated function: ~p:create/5~n", [?MODULE]),
+    Options = #{prune => Prune, start_module => StartModule, application_module => ApplicationModule},
+    create(OutputPath, InputPaths, maps:merge(?DEFAULT_OPTIONS, Options)).
 
 %%-----------------------------------------------------------------------------
 %% @param   InputPath the AVM file from which to list elements
@@ -148,7 +200,7 @@ create(OutputPath, InputPaths, ApplicationModule, Prune, StartModule) ->
 list(InputPath) ->
     case file_type(InputPath) of
         avm ->
-            parse_file(InputPath);
+            parse_file(InputPath, false);
         _ ->
             throw(io_lib:format("Expected AVM file: ~p", [InputPath]))
     end.
@@ -174,7 +226,7 @@ list(InputPath) ->
 delete(OutputPath, InputPath, Names) ->
     case file_type(InputPath) of
         avm ->
-            ParsedFiles = parse_file(InputPath),
+            ParsedFiles = parse_file(InputPath, false),
             write_packbeam(OutputPath, remove_names(Names, ParsedFiles));
         _ ->
             throw(io_lib:format("Expected AVM file: ~p", [InputPath]))
@@ -185,10 +237,10 @@ delete(OutputPath, InputPath, Names) ->
 %%
 
 %% @private
-parse_files(InputPaths, StartModule) ->
+parse_files(InputPaths, StartModule, IncludeLines) ->
     Files = lists:foldl(
         fun(InputPath, Accum) ->
-            Accum ++ parse_file(InputPath)
+            Accum ++ parse_file(InputPath, IncludeLines)
         end,
         [],
         InputPaths
@@ -201,10 +253,10 @@ parse_files(InputPaths, StartModule) ->
     end.
 
 %% @private
-parse_file({InputPath, ModuleName}) ->
-    parse_file(file_type(InputPath), ModuleName, load_file(InputPath));
-parse_file(InputPath) ->
-    parse_file(file_type(InputPath), InputPath, load_file(InputPath)).
+parse_file({InputPath, ModuleName}, IncludeLines) ->
+    parse_file(file_type(InputPath), ModuleName, load_file(InputPath), IncludeLines);
+parse_file(InputPath, IncludeLines) ->
+    parse_file(file_type(InputPath), InputPath, load_file(InputPath), IncludeLines).
 
 %% @private
 file_type(InputPath) ->
@@ -455,10 +507,10 @@ filter_modules(Modules, ParsedFiles) ->
     ).
 
 %% @private
-parse_file(beam, _ModuleName, Data) ->
+parse_file(beam, _ModuleName, Data, IncludeLines) ->
     {ok, Module, Chunks} = beam_lib:all_chunks(Data),
     {UncompressedChunks, UncompressedLiterals} = uncompress_literals(Chunks),
-    FilteredChunks = filter_chunks(UncompressedChunks),
+    FilteredChunks = filter_chunks(UncompressedChunks, IncludeLines),
     {ok, Binary} = beam_lib:build_module(FilteredChunks),
     {ok, {Module, ChunkRefs}} = beam_lib:chunks(Data, [imports, exports, atoms]),
     Exports = proplists:get_value(exports, ChunkRefs),
@@ -479,14 +531,14 @@ parse_file(beam, _ModuleName, Data) ->
             {uncompressed_literals, UncompressedLiterals}
         ]
     ];
-parse_file(avm, ModuleName, Data) ->
+parse_file(avm, ModuleName, Data, _IncludeLines) ->
     case Data of
         <<?AVM_HEADER, AVMData/binary>> ->
             parse_avm_data(AVMData);
         _ ->
             throw(io_lib:format("Invalid AVM header: ~p", [ModuleName]))
     end;
-parse_file(normal, ModuleName, Data) ->
+parse_file(normal, ModuleName, Data, _IncludeLines) ->
     DataSize = byte_size(Data),
     Blob = <<DataSize:32, Data/binary>>,
     [[{module_name, ModuleName}, {flags, ?NORMAL_FILE_FLAG}, {data, Blob}]].
@@ -637,11 +689,17 @@ ends_with(String, Suffix) ->
     string:find(String, Suffix, trailing) =:= Suffix.
 
 %% @private
-filter_chunks(Chunks) ->
+filter_chunks(Chunks, IncludeLines) ->
+    AllowedChunks = allowed_chunks(IncludeLines),
     lists:filter(
-        fun({Tag, _Data}) -> lists:member(Tag, ?ALLOWED_CHUNKS) end,
+        fun({Tag, _Data}) -> lists:member(Tag, AllowedChunks) end,
         Chunks
     ).
+
+allowed_chunks(false) ->
+    ?ALLOWED_CHUNKS;
+allowed_chunks(true) ->
+    ["Line" | ?ALLOWED_CHUNKS].
 
 %% @private
 remove_names(Names, ParsedFiles) ->

@@ -45,7 +45,7 @@ create(OutputPath, InputPaths) ->
 %% @end
 %%-----------------------------------------------------------------------------
 create(OutputPath, InputPaths, Prune, StartModule) ->
-    io:format("WARNING.  packbeam:create/4 is deprecated.  Use packbeam_api::create/4 instead.~n"),
+    io:format("WARNING.  packbeam:create/4 is deprecated.  Use packbeam_api::create/3 instead.~n"),
     packbeam_api:create(OutputPath, InputPaths, Prune, StartModule).
 
 %%-----------------------------------------------------------------------------
@@ -121,6 +121,7 @@ print_help() ->
         "           and <options> are among the following:~n"
         "              [--prune|-p]           Prune dependencies~n"
         "              [--start|-s <module>]  Start module~n"
+        "              [--include_lines|-i]   Include lines in AVM files~n"
         "~n"
         "    list <options> <avm-file>~n"
         "        where:~n"
@@ -253,6 +254,7 @@ parse_args(Argv) ->
 %% @private
 parse_args([], {Opts, Args}) ->
     {Opts, lists:reverse(Args)};
+
 parse_args(["-out", Path | T], {Opts, Args}) ->
     io:format("WARNING.  Deprecated option.  Use --out instead.~n"),
     parse_args(["--out", Path | T], {Opts, Args});
@@ -260,13 +262,7 @@ parse_args(["-o", Path | T], {Opts, Args}) ->
     parse_args(["--out", Path | T], {Opts, Args});
 parse_args(["--out", Path | T], {Opts, Args}) ->
     parse_args(T, {Opts#{output => Path}, Args});
-parse_args(["-in", Path | T], {Opts, Args}) ->
-    io:format("WARNING.  Deprecated option.  Use --in instead.~n"),
-    parse_args(["--in", Path | T], {Opts, Args});
-parse_args(["-i", Path | T], {Opts, Args}) ->
-    parse_args(["--in", Path | T], {Opts, Args});
-parse_args(["--in", Path | T], {Opts, Args}) ->
-    parse_args(T, {Opts#{input => Path}, Args});
+
 parse_args(["-prune" | T], {Opts, Args}) ->
     io:format("WARNING.  Deprecated option.  Use --prune instead.~n"),
     parse_args(["--prune" | T], {Opts, Args});
@@ -274,13 +270,20 @@ parse_args(["-p" | T], {Opts, Args}) ->
     parse_args(["--prune" | T], {Opts, Args});
 parse_args(["--prune" | T], {Opts, Args}) ->
     parse_args(T, {Opts#{prune => true}, Args});
+
 parse_args(["-start", Module | T], {Opts, Args}) ->
     io:format("WARNING.  Deprecated option.  Use --start instead.~n"),
     parse_args(["--start", Module | T], {Opts, Args});
 parse_args(["-s", Module | T], {Opts, Args}) ->
     parse_args(["--start", Module | T], {Opts, Args});
 parse_args(["--start", Module | T], {Opts, Args}) ->
-    parse_args(T, {Opts#{start => list_to_atom(Module)}, Args});
+    parse_args(T, {Opts#{start_module => list_to_atom(Module)}, Args});
+
+parse_args(["-i" | T], {Opts, Args}) ->
+    parse_args(["--include_lines" | T], {Opts, Args});
+parse_args(["--include_lines" | T], {Opts, Args}) ->
+    parse_args(T, {Opts#{include_lines => true}, Args});
+
 parse_args(["-format", Format | T], {Opts, Args}) ->
     io:format("WARNING.  Deprecated option.  Use --format instead.~n"),
     parse_args(["--format", Format | T], {Opts, Args});
