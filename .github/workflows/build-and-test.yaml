@@ -1,0 +1,50 @@
+#
+#  Copyright 2022 Fred Dushin <fred@dushin.net>
+#
+#  SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
+#
+
+name: Build and Test
+
+on: [push, pull_request]
+
+jobs:
+  build-and-test:
+    runs-on: "ubuntu-20.04"
+    strategy:
+      matrix:
+        otp: ["22", "23", "24"]
+
+    steps:
+    # Setup
+    - name: "Checkout repo"
+      uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
+
+    - uses: erlef/setup-beam@v1
+      with:
+        otp-version: ${{ matrix.otp }}
+
+    # Builder info
+    - name: "System info"
+      run: |
+        echo "**uname:**"
+        uname -a
+        echo "**OTP version:**"
+        cat $(dirname $(which erlc))/../releases/RELEASES || true
+
+    - name: "Install deps"
+      run: |
+        sudo apt install -y make git
+
+    - name: "Build rebar3"
+      run: |
+        cd /tmp
+        git clone https://github.com/erlang/rebar3.git
+        cd rebar3
+        ./bootstrap
+
+    # Build
+    - name: "Make"
+      run: PATH="/tmp/rebar3:${PATH}" make

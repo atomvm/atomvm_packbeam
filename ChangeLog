@@ -4,7 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.5]
+## [0.6.0]
+
+### Added
+- Added ability to include `<<"Line">>` chunks in BEAM files in generated AVM files
+- Added CI build
+
+### Changed
+- Changed the `packbeam_api:create` function to take a single map for optional
+parameters, instead of coding paramters into function arguments.  Previous
+versions of the `packbeam_api:create` function that take optional parameters
+have been deprecated.
+
+## [0.5.0]
 
 ### Added
 - Added ability to specify a module name for ordinary (non-BEAM) files (API-only).
