@@ -59,6 +59,15 @@ On-line help is available via the `help` sub-command:
             and <options> are among the following:
                 [--format|-f csv|bare|default]  Format output
 
+        extract <options> <avm-file> [<element>]*
+            where:
+            <avm-file> is an AVM file,
+            [<element>]+ is a list of one or more elements to extract
+                (if empty, then extract all elements)
+            and <options> are among the following:
+                [-out <output-directory>]   Output directory into which to write elements
+                (if unspecified, use the current working directory)
+
         delete <options> <avm-file> [<element>]+
             where:
             <avm-file> is an AVM file,
@@ -130,12 +139,31 @@ You may use the `--format` (alternatively, `-f`) option to specify an output for
 * `bare`  Output just the module name, with no annotations.
 * `default`  Output the module name, size (in brackets), and whether the file provides a `start/0` entrypoint, indicated by an asterisk (`*`).  The `default` output is used if the `--format` option is not specified.
 
+## `extract` sub-command
+
+The `extract` sub-command can be used to extract elements from an AVM file.
+
+To extract one or more elements from an AVM file, specify the location of the AVM file from which to extract elements, followed by the list of elements (as displayed via the `list` sub-command) to extract.  If no elements are listed, then all elements from the AVM file will be extracted.
+
+Non-BEAM ("normal") files that contain paths in their names will be extracted into a directory tree that reflects the path used in the element name.  For example, if the element name is `mylib/priv/sample.txt`, then the `sample.txt` file will be extracted into the `mylib/priv` directory (relative to the output directory, detailed below).
+
+You may optionally specify an output directory using the `--out` option, which will contain the extracted contents of the input AVM file.  This directory must exist beforehand, or a runtime error will occur.  If no output directory is specified, elements will be extracted into the current working directory.
+
+
+For example:
+
+    shell$ mkdir mydir
+    shell$ packbeam extract -out mydir mylib.avm foo.beam mylib/priv/sample.txt
+    Writing to mydir ...
+    x foo.beam
+    x mylib/priv/sample.txt
+
 
 ## `delete` sub-command
 
 The `delete` sub-command can be used to remove elements from an AVM file.
 
-To delete one or more elements from an AVM file, specify the location of the AVM file from which to remove elements, followed by the list of elements (as displayed via the `list` sub-command) to remove.  You may optionally specify an output AVM file using the `-out` option, which will contain the contents of the input AVM file, minus the specified elements.  If no output AVM is specified, the input AVM file will be overwritten.
+To delete one or more elements from an AVM file, specify the location of the AVM file from which to remove elements, followed by the list of elements (as displayed via the `list` sub-command) to remove.  You may optionally specify an output AVM file using the `--out` option, which will contain the contents of the input AVM file, minus the specified elements.  If no output AVM is specified, the input AVM file will be overwritten.
 
 For example:
 

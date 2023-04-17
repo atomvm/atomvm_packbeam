@@ -24,7 +24,7 @@
 -module(packbeam_api).
 
 %% API exports
--export([create/2, create/3, create/4, create/5, list/1, delete/3]).
+-export([create/2, create/3, create/4, create/5, list/1, extract/3, delete/3]).
 %% internally shared API
 -export([is_beam/1, is_entrypoint/1]).
 
@@ -201,6 +201,35 @@ list(InputPath) ->
     case file_type(InputPath) of
         avm ->
             parse_file(InputPath, false);
+        _ ->
+            throw(io_lib:format("Expected AVM file: ~p", [InputPath]))
+    end.
+
+%%-----------------------------------------------------------------------------
+%% @param   InputPath the AVM file from which to extract elements
+%% @param   Names a list of elements from the source AVM file to extract.  If
+%%          empty, then extract all elements.
+%% @param   OutputDir the directory to write the contents
+%% @returns ok if the file was created.
+%% @throws  Reason::string()
+%% @doc     Extract all or selected elements from an AVM file.
+%%
+%%          This function will extract elements of an AVM file at the location specified in
+%%          InputPath, specified by the supplied list of names.  The elements
+%%          from the input AVM file will be written into the specified output directory,
+%%          creating any subdirectories if the AVM file elements contain path information.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec extract(
+    InputPath :: path(),
+    Names :: [path()],
+    OutputDir :: path()
+) -> ok | {error, Reason :: term()}.
+extract(InputPath, Keys, OutputDir) ->
+    case file_type(InputPath) of
+        avm ->
+            ParsedFiles = parse_file(InputPath, false),
+            write_files(filter_names(Keys, ParsedFiles), OutputDir);
         _ ->
             throw(io_lib:format("Expected AVM file: ~p", [InputPath]))
     end.
@@ -707,6 +736,51 @@ remove_names(Names, ParsedFiles) ->
         fun(ParsedFile) ->
             ModuleName = proplists:get_value(module_name, ParsedFile),
             not lists:member(ModuleName, Names)
+        end,
+        ParsedFiles
+    ).
+
+%% @private
+write_files(ParsedFiles, OutputDir) ->
+    case filelib:is_dir(OutputDir) of
+        true ->
+            io:format("Writing to ~s ...~n", [OutputDir]),
+            lists:foreach(
+                fun(ParsedFile) ->
+                    ModuleName = proplists:get_value(module_name, ParsedFile),
+                    Path = OutputDir ++ "/" ++ ModuleName,
+                    case filelib:ensure_dir(Path) of
+                        ok ->
+                            io:format("x ~s~n", [ModuleName]),
+                            RawData = proplists:get_value(data, ParsedFile),
+                            Data =
+                                case file_type(ModuleName) of
+                                    normal ->
+                                        <<Size:32, Rest/binary>> = RawData,
+                                        <<Contents:Size/binary, _/binary>> = Rest,
+                                        Contents;
+                                    _ ->
+                                        RawData
+                                end,
+                            file:write_file(Path, Data);
+                        Error ->
+                            throw(Error)
+                    end
+                end,
+                ParsedFiles
+             );
+        _ ->
+            throw(enoent)
+    end.
+
+%% @private
+filter_names([], ParsedFiles) ->
+    ParsedFiles;
+filter_names(Names, ParsedFiles) ->
+    lists:filter(
+        fun(ParsedFile) ->
+            ModuleName = proplists:get_value(module_name, ParsedFile),
+            lists:member(ModuleName, Names)
         end,
         ParsedFiles
     ).
