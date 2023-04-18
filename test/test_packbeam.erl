@@ -339,6 +339,64 @@ packbeam_create_dependent_avm_test() ->
 
     ok.
 
+packbeam_extract_test() ->
+    AVMFile = dest_dir("packbeam_extract_test.avm"),
+    ?assertMatch(ok,
+        packbeam_api:create(
+            AVMFile, [
+                test_beam_path("a.beam"),
+                test_beam_path("b.beam"),
+                test_beam_path("c.beam"),
+                test_beam_path("d.beam"),
+                "test/priv/test.txt"
+            ]
+        )
+    ),
+
+    ScratchDir = create_scratch_dir("packbeam_extract_test"),
+    ok = packbeam_api:extract(AVMFile, [], ScratchDir),
+
+    ?assert(file_exists(ScratchDir ++ "/a.beam")),
+    ?assert(file_exists(ScratchDir ++ "/b.beam")),
+    ?assert(file_exists(ScratchDir ++ "/c.beam")),
+    ?assert(file_exists(ScratchDir ++ "/d.beam")),
+    ?assert(file_exists(ScratchDir ++ "/test/priv/test.txt")),
+
+    ScratchDir2 = create_scratch_dir("packbeam_extract_test2"),
+    ok = packbeam_api:extract(AVMFile, ["c.beam", "test/priv/test.txt"], ScratchDir2),
+
+    ?assert(not file_exists(ScratchDir2 ++ "/a.beam")),
+    ?assert(not file_exists(ScratchDir2 ++ "/b.beam")),
+    ?assert(file_exists(ScratchDir2 ++ "/c.beam")),
+    ?assert(not file_exists(ScratchDir2 ++ "/d.beam")),
+    ?assert(file_exists(ScratchDir2 ++ "/test/priv/test.txt")),
+
+    ScratchDir3 = create_scratch_dir("packbeam_extract_test3"),
+    ok = packbeam_api:extract(AVMFile, ["c.beam", "does-not-exist"], ScratchDir3),
+
+    ?assert(not file_exists(ScratchDir3 ++ "/a.beam")),
+    ?assert(not file_exists(ScratchDir3 ++ "/b.beam")),
+    ?assert(file_exists(ScratchDir3 ++ "/c.beam")),
+    ?assert(not file_exists(ScratchDir3 ++ "/d.beam")),
+    ?assert(not file_exists(ScratchDir3 ++ "/test/priv/test.txt")),
+
+    ?assertException(throw, _Term,
+        packbeam_api:extract(AVMFile ++ "-garbage", [], ScratchDir3)
+    ),
+
+    ?assertException(throw, _Term,
+        packbeam_api:extract(AVMFile, [], ?BUILD_DIR ++ "does-not-exist")
+    ),
+
+    ?assertException(throw, _Term,
+        packbeam_api:extract(AVMFile, [], ?BUILD_DIR ++ "packbeam_create_dependent_avm_test2.avm")
+    ),
+
+    ok.
+
+file_exists(Path) ->
+    filelib:is_file(Path).
+
 %%
 %% helper functions
 %%
@@ -371,3 +429,7 @@ parsed_file_contains_module(Module, ParsedFiles) ->
         end,
         ParsedFiles
     ).
+
+create_scratch_dir(Name) ->
+    ok = filelib:ensure_dir(?BUILD_DIR ++ "/" ++ Name ++ "/" ++ "dummy"),
+    ?BUILD_DIR ++ "/" ++ Name.

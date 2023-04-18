@@ -83,6 +83,8 @@ main(Argv) ->
                         erlang:halt(do_create(Opts, ArgsRest));
                     "list" ->
                         erlang:halt(do_list(Opts, ArgsRest));
+                    "extract" ->
+                        erlang:halt(do_extract(Opts, ArgsRest));
                     "delete" ->
                         erlang:halt(do_delete(Opts, ArgsRest));
                     "help" ->
@@ -129,12 +131,21 @@ print_help() ->
         "           and <options> are among the following:~n"
         "               [--format|-f csv|bare|default]  Format output~n"
         "~n"
+        "    extract <options> <avm-file> [<element>]*~n"
+        "        where:~n"
+        "           <avm-file> is an AVM file,~n"
+        "           [<element>]+ is a list of one or more elements to extract~n"
+        "               (if empty, then extract all elements)~n"
+        "           and <options> are among the following:~n"
+        "               [--out|-o <output-directory>]   Output directory into which to write elements~n"
+        "               (if unspecified, use the current working directory)~n"
+        "~n"
         "    delete <options> <avm-file> [<element>]+~n"
         "        where:~n"
         "           <avm-file> is an AVM file,~n"
         "           [<element>]+ is a list of one or more elements to delete,~n"
         "           and <options> are among the following:~n"
-        "               [-out <output-avm-file>]    Output AVM file~n"
+        "               [--out|-o <output-avm-file>]    Output AVM file~n"
         "~n"
         "    help  print this help"
         "~n"
@@ -155,6 +166,14 @@ do_list(Opts, Args) ->
     [InputFile | _] = Args,
     Modules = packbeam_api:list(InputFile),
     print_modules(Modules, maps:get(format, Opts, undefined)),
+    0.
+
+%% @private
+do_extract(Opts, Args) ->
+    validate_args(extract, Opts, Args),
+    [InputFile | Rest] = Args,
+    OutputDir = maps:get(output, Opts, "."),
+    ok = packbeam_api:extract(InputFile, Rest, OutputDir),
     0.
 
 %% @private
@@ -184,6 +203,16 @@ validate_args(list, _Opts, [InputPath | _Rest] = _Args) ->
             ok
     end;
 validate_args(list, _Opts, [] = _Args) ->
+    throw("Missing input option");
+%%
+validate_args(extract, _Opts, [InputPath | _Rest] = _Args) ->
+    case not filelib:is_file(InputPath) of
+        true ->
+            throw(io_lib:format("Input file (~p) does not exist", [InputPath]));
+        _ ->
+            ok
+    end;
+validate_args(extract, _Opts, [] = _Args) ->
     throw("Missing input option");
 %%
 validate_args(delete, _Opts, [InputPath | _Rest] = _Args) ->
