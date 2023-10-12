@@ -16,11 +16,11 @@
 %%
 {
     application,
-    packbeam,
+    atomvm_packbeam,
     [
         {description,
             "An escript and library to manipulate (create, list, delete) AtomVM PackBeam files"},
-        {vsn, "0.6.1"},
+        {vsn, "0.6.2"},
         {registered, []},
         {applications, [kernel, stdlib]},
         {env, []},

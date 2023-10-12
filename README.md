@@ -1,4 +1,4 @@
-# packbeam
+# `atomvvm_packbeam`
 
 An Erlang Escript and OTP library used to generate an <a href="http://github.com/bettio/AtomVM">AtomVM</a> AVM file from a set of files (beam files, previously built AVM files, or even arbitrary data files).
 
@@ -15,19 +15,37 @@ Building Packbeam requires Erlang/OTP 22 or later, for compatibility with AtomVM
 
 # Build
 
-To build, run
+To build a release, run the following commands:
 
-    shell$ rebar3 escriptize
+    shell$ rebar3 release
+    shell$ rebar3 tar
 
-or
+These commands will create an Erlang tar archive containing a versioned release of the `atomvm_packbeam` tool, e.g.,
 
-    shell$ make escript
-
-These commands will create an Erlang `escript` file called `packbeam` under
-
-    _build/default/bin/packbeam
+    ...
+    ===> Tarball successfully created: _build/prod/rel/atomvm_packbeam/atomvm_packbeam-0.6.2.tar.gz
 
 in your local working directory.
+
+> IMPORTANT!  The files in this tar archive do not contain the `atomvm_packbeam` prefix, so extracting these files without care will create a `bin` and `lib` directory in the location into which files from the archive is extracted.  See the example below before proceeding!
+
+You can then copy this tar file to any compatible system and extract the contents into a local directory.  E.g.,
+
+    shell$ mkdir /opt/atomvm_packbeam-0.6.2
+    shell$ cp _build/prod/rel/atomvm_packbeam/atomvm_packbeam-0.6.2.tar.gz /opt/atomvm_packbeam-0.6.2/.
+    shell$ cd /opt/atomvm_packbeam-0.6.2
+    shell$ tar xf atomvm_packbeam-0.6.2.tar.gz
+    ...
+
+Set your `PATH` environment variable to include the `bin` directory of this unpacked archive, and you should then be able to run the `packbeam` command included therein.
+
+For example:
+
+    shell$ export PATH=/opt/atomvm_packbeam-0.6.2/bin:$PATH
+    shell$ packbeam help
+    Syntax:
+        packbeam <sub-command> <options> <args>
+        ...
 
 # `packbeam` command
 

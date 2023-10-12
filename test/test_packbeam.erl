@@ -20,7 +20,7 @@
 -include_lib("eunit/include/eunit.hrl").
 
 -define(BUILD_DIR, "_build/").
--define(TEST_BEAM_DIR, "_build/test/lib/packbeam/test/").
+-define(TEST_BEAM_DIR, "_build/test/lib/atomvm_packbeam/test/").
 
 packbeam_create_simple_test() ->
     AVMFile = dest_dir("packbeam_create_simple_test.avm"),
