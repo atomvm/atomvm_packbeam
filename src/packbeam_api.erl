@@ -504,13 +504,18 @@ get_data(ParsedFile) ->
 
 %% @private
 get_parsed_file(Module, ParsedFiles) ->
-    {value, V} = lists:search(
+    SearchResult = lists:search(
         fun(ParsedFile) ->
             proplists:get_value(module, ParsedFile) =:= Module
         end,
         ParsedFiles
     ),
-    V.
+    case SearchResult of
+        {value, V} ->
+            V;
+        false ->
+            exit({module_not_found, Module, ParsedFiles})
+    end.
 
 %% @private
 intersection(A, B) ->
