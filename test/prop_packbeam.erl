@@ -18,7 +18,7 @@
 -include_lib("proper/include/proper.hrl").
 
 -define(BUILD_DIR, "_build/").
--define(TEST_BEAM_DIR, "_build/test/lib/packbeam/test/").
+-define(TEST_BEAM_DIR, "_build/test/lib/atomvm_packbeam/test/").
 
 
 %%

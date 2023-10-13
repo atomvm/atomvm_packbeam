@@ -3,7 +3,7 @@
 ## All rights reserved.
 ##
 
-all: compile escript edoc etest
+all: compile escript edoc etest release
 
 compile:
 	rebar3 compile
@@ -18,6 +18,10 @@ etest:
 	rebar3 eunit --cover
 	rebar3 proper --cover
 	rebar3 cover --verbose
+
+release:
+	rebar3 release
+	rebar3 tar
 
 clean:
 	rm -rf _build
