@@ -29,19 +29,18 @@ in your local working directory.
 
 > IMPORTANT!  The files in this tar archive do not contain the `atomvm_packbeam` prefix, so extracting these files without care will create a `bin` and `lib` directory in the location into which files from the archive is extracted.  See the example below before proceeding!
 
-You can then copy this tar file to any compatible system and extract the contents into a local directory.  E.g.,
+You can use the `install.sh` script to install the `atomvm_packbeam` utility into a location on your local machine.  You will need to specify the prefix location into which you want to install the utility, together with it's current version.
 
-    shell$ mkdir /opt/atomvm_packbeam-0.6.2
-    shell$ cp _build/prod/rel/atomvm_packbeam/atomvm_packbeam-0.6.2.tar.gz /opt/atomvm_packbeam-0.6.2/.
-    shell$ cd /opt/atomvm_packbeam-0.6.2
-    shell$ tar xf atomvm_packbeam-0.6.2.tar.gz
-    ...
+    shell$ ./install.sh /usr/local 0.6.2
+    atomvm_packbeam version 0.6.2 installed in /usr/local.
 
-Set your `PATH` environment variable to include the `bin` directory of this unpacked archive, and you should then be able to run the `packbeam` command included therein.
+> Note.  Some prefix locations may require `root` permissions to write files to.
+
+Set your `PATH` environment variable to include the `bin` directory of the installation prefix (if not already set), and you should then be able to run the `packbeam` command included therein.
 
 For example:
 
-    shell$ export PATH=/opt/atomvm_packbeam-0.6.2/bin:$PATH
+    shell$ export PATH=/usr/local/bin:$PATH
     shell$ packbeam help
     Syntax:
         packbeam <sub-command> <options> <args>
