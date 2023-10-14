@@ -19,6 +19,4 @@
 # SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
 #
 
-readonly root_dir="$(cd $(dirname $0)/.. && pwd)"
-
-exec ${root_dir}/atomvm_packbeam/bin/packbeam "$@"
+exec PACKBEAM_INSTALL_LOCATION/bin/packbeam "$@"

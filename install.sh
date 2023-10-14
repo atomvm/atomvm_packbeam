@@ -93,7 +93,7 @@ echo_run mkdir -p "${dest_dir}"
 echo_run tar -C "${dest_dir}" -x -f "${tmp_dir}/atomvm_packbeam-${version}.tar"
 
 echo_run mkdir -p "${prefix}/bin"
-echo_run cp "${root_dir}/release/packbeam.in" "${prefix}/bin/packbeam"
+echo_run sed "s|PACKBEAM_INSTALL_LOCATION|${dest_dir}|g" "${root_dir}/release/packbeam.in" > "${prefix}/bin/packbeam"
 echo_run chmod 755 "${prefix}/bin/packbeam"
 
 echo_run rm -rf "${tmp_dir}"

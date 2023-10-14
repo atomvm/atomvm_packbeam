@@ -31,8 +31,8 @@ in your local working directory.
 
 You can use the `install.sh` script to install the `atomvm_packbeam` utility into a location on your local machine.  You will need to specify the prefix location into which you want to install the utility, together with it's current version.
 
-    shell$ ./install.sh /usr/local 0.6.2
-    atomvm_packbeam version 0.6.2 installed in /usr/local.
+    shell$ ./install.sh /opt/atomvm_packbeam 0.6.2
+    atomvm_packbeam version 0.6.2 installed in /opt/atomvm_packbeam.
 
 > Note.  Some prefix locations may require `root` permissions to write files to.
 
@@ -40,7 +40,7 @@ Set your `PATH` environment variable to include the `bin` directory of the insta
 
 For example:
 
-    shell$ export PATH=/usr/local/bin:$PATH
+    shell$ export PATH=/opt/atomvm_packbeam/bin:$PATH
     shell$ packbeam help
     Syntax:
         packbeam <sub-command> <options> <args>
