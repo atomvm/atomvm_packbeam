@@ -29,6 +29,13 @@
 -export([main/1]).
 
 %%
+%% MAINTENANCE NOTE.  Due to an issue loading our atomvm_packbeam
+%% application from an escript in a release, we need to fall back to
+%% a hard-wired version string.
+%%
+-define(CURRENT_VERSION, "0.7.0").
+
+%%
 %% Public API
 %%
 
@@ -87,6 +94,9 @@ main(Argv) ->
                         erlang:halt(do_extract(Opts, ArgsRest));
                     "delete" ->
                         erlang:halt(do_delete(Opts, ArgsRest));
+                    "version" ->
+                        io:format("~s~n", [get_version()]),
+                        erlang:halt(0);
                     "help" ->
                         print_help(),
                         erlang:halt(0);
@@ -111,6 +121,9 @@ main(Argv) ->
 %% @private
 print_help() ->
     io:format(
+        "~n"
+        "packbeam version ~s~n"
+        "~n"
         "Syntax:~n"
         "    packbeam <sub-command> <options> <args>~n"
         "~n"
@@ -123,7 +136,7 @@ print_help() ->
         "           and <options> are among the following:~n"
         "              [--prune|-p]           Prune dependencies~n"
         "              [--start|-s <module>]  Start module~n"
-        "              [--include_lines|-i]   Include lines in AVM files~n"
+        "              [--remove_lines|-r]    Remove line number information from AVM files~n"
         "~n"
         "    list <options> <avm-file>~n"
         "        where:~n"
@@ -147,16 +160,40 @@ print_help() ->
         "           and <options> are among the following:~n"
         "               [--out|-o <output-avm-file>]    Output AVM file~n"
         "~n"
-        "    help  print this help"
+        "    version~n"
+        "        Print version and exit~n"
         "~n"
+        "    help~n"
+        "        Print this help~n"
+        "~n",
+        [get_version()]
     ).
+
+%% @private
+get_version() ->
+    case application:load(atomvm_packbeam) of
+        ok ->
+            case lists:keyfind(atomvm_packbeam, 1, application:loaded_applications()) of
+                {_, _, Version} ->
+                    Version;
+                false ->
+                    ?CURRENT_VERSION
+            end;
+        {error, _Reason} ->
+            ?CURRENT_VERSION
+    end.
 
 %% @private
 do_create(Opts, Args) ->
     validate_args(create, Opts, Args),
     [OutputFile | InputFiles] = Args,
     ok = packbeam_api:create(
-        OutputFile, InputFiles, undefined, maps:get(prune, Opts, false), maps:get(start, Opts, undefined)
+        OutputFile, InputFiles,
+        #{
+            prune => maps:get(prune, Opts, false),
+            start => maps:get(start, Opts, undefined),
+            include_lines => not maps:get(remove_lines, Opts, false)
+        }
     ),
     0.
 
@@ -308,10 +345,10 @@ parse_args(["-s", Module | T], {Opts, Args}) ->
 parse_args(["--start", Module | T], {Opts, Args}) ->
     parse_args(T, {Opts#{start_module => list_to_atom(Module)}, Args});
 
-parse_args(["-i" | T], {Opts, Args}) ->
-    parse_args(["--include_lines" | T], {Opts, Args});
-parse_args(["--include_lines" | T], {Opts, Args}) ->
-    parse_args(T, {Opts#{include_lines => true}, Args});
+parse_args(["-r" | T], {Opts, Args}) ->
+    parse_args(["--remove_lines" | T], {Opts, Args});
+parse_args(["--remove_lines" | T], {Opts, Args}) ->
+    parse_args(T, {Opts#{remove_lines => true}, Args});
 
 parse_args(["-format", Format | T], {Opts, Args}) ->
     io:format("WARNING.  Deprecated option.  Use --format instead.~n"),

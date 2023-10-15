@@ -57,18 +57,22 @@ The general syntax of the `packbeam` command takes the form:
 On-line help is available via the `help` sub-command:
 
     shell$ packbeam help
+
+    packbeam version 0.7.0
+
     Syntax:
-    packbeam <sub-command> <options> <args>
+        packbeam <sub-command> <options> <args>
 
     The following sub-commands are supported:
 
         create <options> <output-avm-file> [<input-file>]+
             where:
             <output-avm-file> is the output AVM file,
-            [<input-file>]+ is is a list of one or more input files,
+            [<input-file>]+ is a list of one or more input files,
             and <options> are among the following:
                 [--prune|-p]           Prune dependencies
                 [--start|-s <module>]  Start module
+                [--remove_lines|-r]    Remove line number information from AVM files
 
         list <options> <avm-file>
             where:
@@ -82,17 +86,21 @@ On-line help is available via the `help` sub-command:
             [<element>]+ is a list of one or more elements to extract
                 (if empty, then extract all elements)
             and <options> are among the following:
-                [-out <output-directory>]   Output directory into which to write elements
+                [--out|-o <output-directory>]   Output directory into which to write elements
                 (if unspecified, use the current working directory)
 
         delete <options> <avm-file> [<element>]+
             where:
             <avm-file> is an AVM file,
-            [<element>]+ is is a list of one or more elements to delete,
+            [<element>]+ is a list of one or more elements to delete,
             and <options> are among the following:
-                [-out <output-avm-file>]    Output AVM file
+                [--out|-o <output-avm-file>]    Output AVM file
 
-        help  print this help
+        version
+            Print version and exit
+
+        help
+            Print this help
 
 The `packbeam` command will return an exit status of 0 on successful completion of a command.  An unspecified non-zero value is returned in the event of an error.
 
@@ -135,6 +143,12 @@ In addition, you may specify a "normal" (i.e., non-beam or non-AVM) file.  Norma
 If you specify the `--prune` (alternatively, `-p`) flag, then `packbeam` will only include beam files that are transitively dependent on the entry-point beam.  Transitive dependencies are determined by imports, as well as use of an atom in a module (e.g, as the result of a dynamic function call, based on a module name).
 
 If there is no beam file with a `start/0` entry-point defined in the list of input modules and the `--prune` flag is used, the command will fail.  You should _not_ use the `--prune` flag if you are trying to build libraries suitable for inclusion on other AtomVM applications.
+
+### Line number information
+
+By default, the `packbeam` tool will generate line number information for embedded BEAM files.  Line number information is included in Erlang stacktraces, giving developers more clues into bugs in their programs.  However, line number information does increase the size of AVM files, and in some cases can have an impact on memory in running applications.
+
+For production applications that have no need for line number information, we recommend using the `-r` (or `--remove_lines`) flags, which will strip line number information from embedded BEAM files.
 
 ## `list` sub-command
 
