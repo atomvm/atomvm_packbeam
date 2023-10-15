@@ -3,7 +3,7 @@
 ## All rights reserved.
 ##
 
-all: compile escript edoc etest release
+all: compile escript edoc etest rel
 
 compile:
 	rebar3 compile
@@ -19,7 +19,7 @@ etest:
 	rebar3 proper --cover
 	rebar3 cover --verbose
 
-release:
+rel:
 	rebar3 release
 	rebar3 tar
 

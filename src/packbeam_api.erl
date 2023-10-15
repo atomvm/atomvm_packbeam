@@ -56,7 +56,7 @@
     prune => false,
     start_module => undefined,
     application_module => undefined,
-    include_lines => false
+    include_lines => true
 }).
 
 %%
