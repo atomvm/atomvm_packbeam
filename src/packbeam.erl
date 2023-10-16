@@ -29,13 +29,6 @@
 -export([main/1]).
 
 %%
-%% MAINTENANCE NOTE.  Due to an issue loading our atomvm_packbeam
-%% application from an escript in a release, we need to fall back to
-%% a hard-wired version string.
-%%
--define(CURRENT_VERSION, "0.7.0").
-
-%%
 %% Public API
 %%
 
@@ -177,10 +170,10 @@ get_version() ->
                 {_, _, Version} ->
                     Version;
                 false ->
-                    ?CURRENT_VERSION
+                    "Error!  Unable to find atomvm_packbeam in loaded applications"
             end;
         {error, _Reason} ->
-            ?CURRENT_VERSION
+            "Error!  Unable to load atomvm_packbeam application"
     end.
 
 %% @private
