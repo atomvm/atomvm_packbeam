@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -e
 #
 # This file is part of AtomVM.
 #
@@ -19,4 +19,10 @@
 # SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
 #
 
-exec PACKBEAM_INSTALL_LOCATION/bin/packbeam "$@"
+root_dir="$(cd $(dirname $0)/.. && pwd)"
+pkg_root="${root_dir}/atomvm_packbeam"
+
+PATH="${pkg_root}/erts-{{ release_erts_version }}/bin:${PATH}"
+export PATH
+
+exec ${pkg_root}/bin/packbeam "$@"
