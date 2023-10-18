@@ -19,7 +19,13 @@
 # SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
 #
 
-root_dir="$(cd $(dirname $0)/.. && pwd)"
+if [ -L "${0}" ]; then
+    base="$(dirname $0)/$(readlink $0)"
+    root_dir="$(cd $(dirname ${base})/.. && pwd)"
+else
+    root_dir="$(cd $(dirname $0)/.. && pwd)"
+fi
+
 pkg_root="${root_dir}/atomvm_packbeam"
 
 PATH="${pkg_root}/erts-{{ release_erts_version }}/bin:${PATH}"
