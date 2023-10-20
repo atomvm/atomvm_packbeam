@@ -408,19 +408,19 @@ test_beam_path(BeamFile) ->
     ?TEST_BEAM_DIR ++ BeamFile.
 
 get_module(ParsedFile) ->
-    proplists:get_value(module, ParsedFile).
+    packbeam_api:get_element_module(ParsedFile).
 
 get_module_name(ParsedFile) ->
-    proplists:get_value(module_name, ParsedFile).
+    packbeam_api:get_element_name(ParsedFile).
 
 get_exports(ParsedFile) ->
     proplists:get_value(exports, proplists:get_value(chunk_refs, ParsedFile)).
 
 is_start(ParsedFile) ->
-    proplists:get_value(flags, ParsedFile) band 16#01 == 16#01.
+    packbeam_api:is_entrypoint(ParsedFile).
 
 is_beam(ParsedFile) ->
-    proplists:get_value(flags, ParsedFile) band 16#02 == 16#02.
+    packbeam_api:is_beam(ParsedFile).
 
 parsed_file_contains_module(Module, ParsedFiles) ->
     lists:any(

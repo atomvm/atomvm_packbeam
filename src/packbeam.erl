@@ -272,13 +272,12 @@ print_modules(Modules, Format) ->
 print_module(ParsedFile, undefined) ->
     print_module(ParsedFile, "default");
 print_module(ParsedFile, "default") ->
-    ModuleName = proplists:get_value(module_name, ParsedFile),
-    Flags = proplists:get_value(flags, ParsedFile),
-    Data = proplists:get_value(data, ParsedFile),
+    Name = packbeam_api:get_element_name(ParsedFile),
+    Data = packbeam_api:get_element_data(ParsedFile),
     io:format(
         "~s~s [~p]~n", [
-            ModuleName,
-            case packbeam_api:is_entrypoint(Flags) of
+            Name,
+            case packbeam_api:is_entrypoint(ParsedFile) of
                 true -> " *";
                 _ -> ""
             end,
@@ -286,21 +285,21 @@ print_module(ParsedFile, "default") ->
         ]
     );
 print_module(ParsedFile, "csv") ->
-    ModuleName = proplists:get_value(module_name, ParsedFile),
-    Data = proplists:get_value(data, ParsedFile),
+    Name = packbeam_api:get_element_name(ParsedFile),
+    Data = packbeam_api:get_element_data(ParsedFile),
     io:format(
         "~s,~p,~p,~p~n", [
-            ModuleName,
+            Name,
             packbeam_api:is_beam(ParsedFile),
             packbeam_api:is_entrypoint(ParsedFile),
             byte_size(Data)
         ]
     );
 print_module(ParsedFile, "bare") ->
-    ModuleName = proplists:get_value(module_name, ParsedFile),
+    Name = packbeam_api:get_element_name(ParsedFile),
     io:format(
         "~s~n", [
-            ModuleName
+            Name
         ]
     );
 print_module(_ParsedFile, Format) ->
