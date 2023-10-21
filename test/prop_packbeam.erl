@@ -108,16 +108,16 @@ dest_dir(AVMFile) ->
     ?BUILD_DIR ++ AVMFile.
 
 get_module(ParsedFile) ->
-    proplists:get_value(module, ParsedFile).
+    packbeam_api:get_element_module(ParsedFile).
 
 get_module_name(ParsedFile) ->
-    proplists:get_value(module_name, ParsedFile).
+    packbeam_api:get_element_name(ParsedFile).
 
 is_start(ParsedFile) ->
-    proplists:get_value(flags, ParsedFile) band 16#01 == 16#01.
+    packbeam_api:is_entrypoint(ParsedFile).
 
 is_beam(ParsedFile) ->
-    proplists:get_value(flags, ParsedFile) band 16#02 == 16#02.
+    packbeam_api:is_beam(ParsedFile).
 
 %%
 %% Generators

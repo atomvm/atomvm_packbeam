@@ -25,8 +25,9 @@
 
 %% API exports
 -export([create/2, create/3, create/4, create/5, list/1, extract/3, delete/3]).
-%% internally shared API
--export([is_beam/1, is_entrypoint/1]).
+
+%% AVM Entry functions
+-export([is_beam/1, is_entrypoint/1, get_element_name/1, get_element_data/1, get_element_module/1]).
 
 -define(AVM_HEADER,
     16#23, 16#21, 16#2f, 16#75,
@@ -43,14 +44,22 @@
 -define(BEAM_CODE_FLAG, 2).
 -define(NORMAL_FILE_FLAG, 4).
 
+-opaque avm_element() :: [atom() | {atom(), term()}].
 -type path() :: string().
--type parsed_file() :: [{string(), term()}].
-- type options() :: #{
+-type avm_element_name() :: string().
+-type options() :: #{
     prune => boolean(),
     start_module => module() | undefined,
     application_module => module() | undefined,
     include_lines => boolean()
 }.
+
+-export_type([
+    path/0,
+    avm_element/0,
+    avm_element_name/0,
+    options/0
+]).
 
 -define(DEFAULT_OPTIONS, #{
     prune => false,
@@ -82,7 +91,7 @@
 %% @end
 %%-----------------------------------------------------------------------------
 -spec create(
-    OutputPath ::path(),
+    OutputPath :: path(),
     InputPaths :: [path()]
 ) -> ok | {error, Reason :: term()}.
 create(OutputPath, InputPaths) ->
@@ -101,7 +110,7 @@ create(OutputPath, InputPaths) ->
 %% @end
 %%-----------------------------------------------------------------------------
 -spec create(
-    OutputPath ::path(),
+    OutputPath :: path(),
     InputPaths :: [path()],
     Options :: options()
 ) -> ok | {error, Reason :: term()}.
@@ -138,9 +147,10 @@ create(OutputPath, InputPaths, Options) ->
 %%
 %%          Equivalent to create(OutputPath, InputPaths, undefined, Prune, StartModule).
 %% @end
+%% @hidden
 %%-----------------------------------------------------------------------------
 -spec create(
-    OutputPath ::path(),
+    OutputPath :: path(),
     InputPaths :: [path()],
     Prune :: boolean(),
     StartModule :: module() | undefined
@@ -172,9 +182,10 @@ create(OutputPath, InputPaths, Prune, StartModule) ->
 %%          This function will create an AVM file at the location specified in
 %%          OutputPath, using the input files specified in InputPaths.
 %% @end
+%% @hidden
 %%-----------------------------------------------------------------------------
 -spec create(
-    OutputPath ::path(),
+    OutputPath :: path(),
     InputPaths :: [path()],
     ApplicationModule :: module() | undefined,
     Prune :: boolean(),
@@ -188,7 +199,7 @@ create(OutputPath, InputPaths, ApplicationModule, Prune, StartModule) ->
 
 %%-----------------------------------------------------------------------------
 %% @param   InputPath the AVM file from which to list elements
-%% @returns list of parsed file data
+%% @returns list of element data
 %% @throws  Reason::string()
 %% @doc     List the contents of an AVM file.
 %%
@@ -196,7 +207,7 @@ create(OutputPath, InputPaths, ApplicationModule, Prune, StartModule) ->
 %%          location specified in InputPath.
 %% @end
 %%-----------------------------------------------------------------------------
--spec list(InputPath :: path()) -> [parsed_file()].
+-spec list(InputPath :: path()) -> [avm_element()].
 list(InputPath) ->
     case file_type(InputPath) of
         avm ->
@@ -207,7 +218,7 @@ list(InputPath) ->
 
 %%-----------------------------------------------------------------------------
 %% @param   InputPath the AVM file from which to extract elements
-%% @param   Names a list of elements from the source AVM file to extract.  If
+%% @param   AVMElementNames a list of elements from the source AVM file to extract.  If
 %%          empty, then extract all elements.
 %% @param   OutputDir the directory to write the contents
 %% @returns ok if the file was created.
@@ -222,14 +233,14 @@ list(InputPath) ->
 %%-----------------------------------------------------------------------------
 -spec extract(
     InputPath :: path(),
-    Names :: [path()],
+    AVMElementNames :: [avm_element_name()],
     OutputDir :: path()
 ) -> ok | {error, Reason :: term()}.
-extract(InputPath, Keys, OutputDir) ->
+extract(InputPath, AVMElementNames, OutputDir) ->
     case file_type(InputPath) of
         avm ->
             ParsedFiles = parse_file(InputPath, false),
-            write_files(filter_names(Keys, ParsedFiles), OutputDir);
+            write_files(filter_names(AVMElementNames, ParsedFiles), OutputDir);
         _ ->
             throw(io_lib:format("Expected AVM file: ~p", [InputPath]))
     end.
@@ -237,7 +248,7 @@ extract(InputPath, Keys, OutputDir) ->
 %%-----------------------------------------------------------------------------
 %% @param   InputPath the AVM file from which to delete elements
 %% @param   OutputPath the path to write the AVM file
-%% @param   Names a list of elements from the source AVM file to delete
+%% @param   AVMElementNames a list of elements from the source AVM file to delete
 %% @returns ok if the file was created.
 %% @throws  Reason::string()
 %% @doc     Delete selected elements of an AVM file.
@@ -250,20 +261,76 @@ extract(InputPath, Keys, OutputDir) ->
 -spec delete(
     OutputPath :: path(),
     InputPath :: path(),
-    Name :: [path()]
+    AVMElementNames :: [avm_element_name()]
 ) -> ok | {error, Reason :: term()}.
-delete(OutputPath, InputPath, Names) ->
+delete(OutputPath, InputPath, AVMElementNames) ->
     case file_type(InputPath) of
         avm ->
             ParsedFiles = parse_file(InputPath, false),
-            write_packbeam(OutputPath, remove_names(Names, ParsedFiles));
+            write_packbeam(OutputPath, remove_names(AVMElementNames, ParsedFiles));
         _ ->
             throw(io_lib:format("Expected AVM file: ~p", [InputPath]))
     end.
 
+%%-----------------------------------------------------------------------------
+%% @param   AVMElement An AVM file element
+%% @returns the name of the element.
+%% @doc     Return the name of the element.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec get_element_name(AVMElement :: avm_element()) -> avm_element_name().
+get_element_name(AVMElement) ->
+    proplists:get_value(element_name, AVMElement).
+
+%%-----------------------------------------------------------------------------
+%% @param   AVMElement An AVM file element
+%% @returns the AVM element data.
+%% @doc     Return AVM element data.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec get_element_data(AVMElement :: avm_element()) -> binary().
+get_element_data(AVMElement) ->
+    proplists:get_value(data, AVMElement).
+
+%%-----------------------------------------------------------------------------
+%% @param   AVMElement An AVM file element
+%% @returns the AVM element module, if the element is a BEAM file; `undefined',
+%% otherwise.
+%% @doc     Return AVM element module, if the element is a BEAM file.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec get_element_module(AVMElement :: avm_element()) -> module() | undefined.
+get_element_module(AVMElement) ->
+    proplists:get_value(module, AVMElement).
+
+%%-----------------------------------------------------------------------------
+%% @param   AVMElement An AVM file element
+%% @returns `true' if the AVM element is an entrypoint (i.e., exports a `start/0'
+%% function); `false' otherwise.
+%% @doc     Indicates whether the AVM file element is an entrypoint.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec is_entrypoint(AVMElement :: avm_element()) -> boolean().
+is_entrypoint(AVMElement) ->
+    (get_flags(AVMElement) band ?BEAM_START_FLAG) =:= ?BEAM_START_FLAG.
+
+%%-----------------------------------------------------------------------------
+%% @param   AVMElement An AVM file element
+%% @returns `true' if the AVM element is a BEAM file; `false' otherwise.
+%% @doc     Indicates whether the AVM file element is a BEAM file.
+%% @end
+%%-----------------------------------------------------------------------------
+-spec is_beam(AVMElement :: avm_element()) -> boolean().
+is_beam(AVMElement) ->
+    (get_flags(AVMElement) band ?BEAM_CODE_FLAG) =:= ?BEAM_CODE_FLAG.
+
 %%
 %% Internal API functions
 %%
+
+%% @private
+get_flags(AVMElement) ->
+    proplists:get_value(flags, AVMElement).
 
 %% @private
 parse_files(InputPaths, StartModule, IncludeLines) ->
@@ -315,7 +382,7 @@ prune(ParsedFiles, RootApplicationModule) ->
             throw("No input beam files contain start/0 entrypoint");
         {value, Entrypoint} ->
             BeamFiles = lists:filter(fun is_beam/1, ParsedFiles),
-            Modules = closure(Entrypoint, BeamFiles, [get_module(Entrypoint)]),
+            Modules = closure(Entrypoint, BeamFiles, [get_element_module(Entrypoint)]),
             ApplicationStartModules = find_application_modules(ParsedFiles, RootApplicationModule),
             ApplicationModules = find_dependencies(ApplicationStartModules, BeamFiles),
             filter_modules(Modules ++ ApplicationModules, ParsedFiles)
@@ -382,14 +449,14 @@ find_application_spec(ApplicationSpecs, ApplicationModule) ->
     ).
 
 get_application_spec(ApplicationFile) ->
-    ApplicationData = get_data(ApplicationFile),
+    ApplicationData = get_element_data(ApplicationFile),
     <<_Size:4/binary, SerializedTerm/binary>> = ApplicationData,
     binary_to_term(SerializedTerm).
 
 is_application_file(ParsedFile) ->
     case not is_beam(ParsedFile) of
         true ->
-            ModuleName = get_module_name(ParsedFile),
+            ModuleName = get_element_name(ParsedFile),
             Components = string:split(ModuleName, "/", all),
             case Components of
                 [_ModuleName, "priv", "application.bin"] ->
@@ -406,22 +473,10 @@ find_entrypoint(ParsedFiles) ->
     lists:search(fun is_entrypoint/1, ParsedFiles).
 
 %% @private
-is_entrypoint(Flags) when is_integer(Flags) ->
-    Flags band ?BEAM_START_FLAG =:= ?BEAM_START_FLAG;
-is_entrypoint(ParsedFile) ->
-    is_entrypoint(proplists:get_value(flags, ParsedFile)).
-
-%% @private
-is_beam(Flags) when is_integer(Flags) ->
-    Flags band ?BEAM_CODE_FLAG =:= ?BEAM_CODE_FLAG;
-is_beam(ParsedFile) ->
-    is_beam(proplists:get_value(flags, ParsedFile)).
-
-%% @private
 closure(_Current, [], Accum) ->
     lists:reverse(Accum);
 closure(Current, Candidates, Accum) ->
-    CandidateModules = get_modules(Candidates),
+    CandidateModules = get_element_modules(Candidates),
     CurrentsImports = get_imports(Current),
     CurrentsAtoms = get_atoms(Current),
     DepModules = intersection(CurrentsImports ++ CurrentsAtoms, CandidateModules) -- Accum,
@@ -441,7 +496,7 @@ closure(Current, Candidates, Accum) ->
 
 %% @private
 remove(Module, ParsedFiles) ->
-    [P || P <- ParsedFiles, Module =/= proplists:get_value(module, P)].
+    [P || P <- ParsedFiles, Module =/= get_element_module(P)].
 
 %% @private
 get_imports(ParsedFile) ->
@@ -487,26 +542,14 @@ extract_atoms(_Term, Accum) ->
     Accum.
 
 %% @private
-get_modules(ParsedFiles) ->
-    [get_module(ParsedFile) || ParsedFile <- ParsedFiles].
-
-%% @private
-get_module(ParsedFile) ->
-    proplists:get_value(module, ParsedFile).
-
-%% @private
-get_module_name(ParsedFile) ->
-    proplists:get_value(module_name, ParsedFile).
-
-%% @private
-get_data(ParsedFile) ->
-    proplists:get_value(data, ParsedFile).
+get_element_modules(ParsedFiles) ->
+    [get_element_module(ParsedFile) || ParsedFile <- ParsedFiles].
 
 %% @private
 get_parsed_file(Module, ParsedFiles) ->
     SearchResult = lists:search(
         fun(ParsedFile) ->
-            proplists:get_value(module, ParsedFile) =:= Module
+            get_element_module(ParsedFile) =:= Module
         end,
         ParsedFiles
     ),
@@ -532,7 +575,7 @@ filter_modules(Modules, ParsedFiles) ->
         fun(ParsedFile) ->
             case is_beam(ParsedFile) of
                 true ->
-                    lists:member(get_module(ParsedFile), Modules);
+                    lists:member(get_element_module(ParsedFile), Modules);
                 _ ->
                     true
             end
@@ -558,7 +601,7 @@ parse_file(beam, _ModuleName, Data, IncludeLines) ->
     [
         [
             {module, Module},
-            {module_name, io_lib:format("~s.beam", [atom_to_list(Module)])},
+            {element_name, io_lib:format("~s.beam", [atom_to_list(Module)])},
             {flags, Flags},
             {data, Binary},
             {chunk_refs, ChunkRefs},
@@ -575,7 +618,7 @@ parse_file(avm, ModuleName, Data, _IncludeLines) ->
 parse_file(normal, ModuleName, Data, _IncludeLines) ->
     DataSize = byte_size(Data),
     Blob = <<DataSize:32, Data/binary>>,
-    [[{module_name, ModuleName}, {flags, ?NORMAL_FILE_FLAG}, {data, Blob}]].
+    [[{element_name, ModuleName}, {flags, ?NORMAL_FILE_FLAG}, {data, Blob}]].
 
 %% @private
 reorder_start_module(StartModule, Files) ->
@@ -583,10 +626,9 @@ reorder_start_module(StartModule, Files) ->
         lists:partition(
             fun(Props) ->
                 % io:format("Props: ~w~n", [Props]),
-                case proplists:get_value(module, Props) of
+                case get_element_module(Props) of
                     StartModule ->
-                        Flags = proplists:get_value(flags, Props),
-                        case is_entrypoint(Flags) of
+                        case is_entrypoint(Props) of
                             true -> true;
                             _ -> throw({start_module_not_start_beam, StartModule})
                         end;
@@ -629,17 +671,17 @@ parse_avm_data(<<Size:32/integer, AVMRest/binary>>, Accum) ->
 
 %% @private
 parse_beam(<<Flags:32, _Reserved:32, Rest/binary>>, [], in_header, Pos, Accum) ->
-    parse_beam(Rest, [], in_module_name, Pos + 8, [{flags, Flags} | Accum]);
-parse_beam(<<0:8, Rest/binary>>, Tmp, in_module_name, Pos, Accum) ->
+    parse_beam(Rest, [], in_element_name, Pos + 8, [{flags, Flags} | Accum]);
+parse_beam(<<0:8, Rest/binary>>, Tmp, in_element_name, Pos, Accum) ->
     ModuleName = lists:reverse(Tmp),
     case (Pos + 1) rem 4 of
         0 ->
-            parse_beam(Rest, Tmp, in_data, Pos, [{module_name, ModuleName} | Accum]);
+            parse_beam(Rest, Tmp, in_data, Pos, [{element_name, ModuleName} | Accum]);
         _ ->
-            parse_beam(Rest, [], eat_padding, Pos + 1, [{module_name, ModuleName} | Accum])
+            parse_beam(Rest, [], eat_padding, Pos + 1, [{element_name, ModuleName} | Accum])
     end;
-parse_beam(<<C:8, Rest/binary>>, Tmp, in_module_name, Pos, Accum) ->
-    parse_beam(Rest, [C | Tmp], in_module_name, Pos + 1, Accum);
+parse_beam(<<C:8, Rest/binary>>, Tmp, in_element_name, Pos, Accum) ->
+    parse_beam(Rest, [C | Tmp], in_element_name, Pos + 1, Accum);
 parse_beam(<<0:8, Rest/binary>>, Tmp, eat_padding, Pos, Accum) ->
     case (Pos + 1) rem 4 of
         0 ->
@@ -650,8 +692,7 @@ parse_beam(<<0:8, Rest/binary>>, Tmp, eat_padding, Pos, Accum) ->
 parse_beam(Bin, Tmp, eat_padding, Pos, Accum) ->
     parse_beam(Bin, Tmp, in_data, Pos, Accum);
 parse_beam(Data, _Tmp, in_data, _Pos, Accum) ->
-    Flags = proplists:get_value(flags, Accum),
-    case is_beam(Flags) orelse is_entrypoint(Flags) of
+    case is_beam(Accum) orelse is_entrypoint(Accum) of
         true ->
             StrippedData = strip_padding(Data),
             {ok, {Module, ChunkRefs}} = beam_lib:chunks(StrippedData, [imports, exports, atoms]),
@@ -692,9 +733,9 @@ write_packbeam(OutputFilePath, ParsedFiles) ->
 
 %% @private
 pack_data(ParsedFile) ->
-    ModuleName = list_to_binary(proplists:get_value(module_name, ParsedFile)),
-    Flags = proplists:get_value(flags, ParsedFile),
-    Data = proplists:get_value(data, ParsedFile),
+    ModuleName = list_to_binary(get_element_name(ParsedFile)),
+    Flags = get_flags(ParsedFile),
+    Data = get_element_data(ParsedFile),
     HeaderSize = header_size(ModuleName),
     HeaderPadding = create_padding(HeaderSize),
     DataSize = byte_size(Data),
@@ -739,7 +780,7 @@ allowed_chunks(true) ->
 remove_names(Names, ParsedFiles) ->
     lists:filter(
         fun(ParsedFile) ->
-            ModuleName = proplists:get_value(module_name, ParsedFile),
+            ModuleName = get_element_name(ParsedFile),
             not lists:member(ModuleName, Names)
         end,
         ParsedFiles
@@ -752,12 +793,12 @@ write_files(ParsedFiles, OutputDir) ->
             io:format("Writing to ~s ...~n", [OutputDir]),
             lists:foreach(
                 fun(ParsedFile) ->
-                    ModuleName = proplists:get_value(module_name, ParsedFile),
+                    ModuleName = get_element_name(ParsedFile),
                     Path = OutputDir ++ "/" ++ ModuleName,
                     case filelib:ensure_dir(Path) of
                         ok ->
                             io:format("x ~s~n", [ModuleName]),
-                            RawData = proplists:get_value(data, ParsedFile),
+                            RawData = get_element_data(ParsedFile),
                             Data =
                                 case file_type(ModuleName) of
                                     normal ->
@@ -784,7 +825,7 @@ filter_names([], ParsedFiles) ->
 filter_names(Names, ParsedFiles) ->
     lists:filter(
         fun(ParsedFile) ->
-            ModuleName = proplists:get_value(module_name, ParsedFile),
+            ModuleName = get_element_name(ParsedFile),
             lists:member(ModuleName, Names)
         end,
         ParsedFiles

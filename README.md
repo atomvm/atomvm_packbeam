@@ -1,19 +1,20 @@
 # `atomvvm_packbeam`
 
-An Erlang Escript and OTP library used to generate an <a href="http://github.com/bettio/AtomVM">AtomVM</a> AVM file from a set of files (beam files, previously built AVM files, or even arbitrary data files).
+An Erlang Escript and library used to generate an [AtomVM](http://github.com/atomvm/AtomVM) AVM file from a set of files (beam files, previously built AVM files, or even arbitrary data files).
 
 This tool roughly approximates the functionality of the AtomVM `PackBEAM` utility, except:
 
 * Support for multiple data types, include beam files, text files, etc
-* "Smart" extraction of beams from AVM files, so that only the beams that are needed are packed
+* "Pruned" extraction of beams from AVM files, so that only the beams that are needed are packed
+* Support for embedded OTP applications in your PackBEAM files.
 
-The `packbeam` tool may be used on its own.  More typically, it is used internally as part of the <a href="https://github.com/fadushin/atomvm_rebar3_plugin">atomvm_rebar3_plugin</a> `rebar3` plugin.
+The `packbeam` tool may be used on its own as a stand-alone command-line utility.  More typically, it is used internally as part of the [`atomvm_rebar3_plugin`](https://github.com/atomvm/atomvm_rebar3_plugin) [`rebar3`](https://rebar3.org) plugin.
 
-# Prerequisites
+## Prerequisites
 
-Building Packbeam requires Erlang/OTP 22 or later, for compatibility with AtomVM, as well as a local installation of `rebar3`.  Optionally, any recent version of `make` may be used to simplify builds.
+Building `packbeam` requires a version of Erlang/OTP compatible with [AtomVM](https://github.com/atomvm/AtomVM), as well as a local installation of [`rebar3`](https://rebar3.org).  Optionally, any recent version of `make` may be used to simplify builds.  Consult the [AtomVM Documentation](https://www.atomvm.net/doc/master/) for information about supported OTP versions.
 
-# Build
+## Build
 
 To build a release, run the following commands:
 
@@ -46,7 +47,7 @@ For example:
         packbeam <sub-command> <options> <args>
         ...
 
-# `packbeam` command
+## `packbeam` command
 
 The `packbeam` command is used to create an AVM file from a list of beam and other file types, to list the contents of an AVM file, or to delete elements from an AVM file.
 
@@ -106,7 +107,7 @@ The `packbeam` command will return an exit status of 0 on successful completion 
 
 The `packbeam` sub-commands are described in more detail below.
 
-## `create` sub-command
+### `create` sub-command
 
 To create an AVM file from a list of beam files, use the `create` sub-command to create an AVM file.  The first argument is take to be the output AVM file, following by the files you would like to add, e.g.,
 
@@ -122,7 +123,7 @@ The input files specified in the create subcommand may be among the following ty
 
 Note that beam files specified are stripped of their path information, inside of the generated AVM file.  Any files that have the same name will be added in the order they are listed on the command line.  However, AtomVM will only resolve the first such file when loading modules at run-time.
 
-### Start Entrypoint
+#### Start Entrypoint
 
 If you are building an application that provides a start entrypoint (as opposed to a library, suitable for inclusion in another AVM file), then at least one beam module in an AVM file must contain a `start/0` entry-point, i.e., a function called `start` with arity 0.  AtomVM will use this entry-point as the first function to execute, when starting.
 
@@ -138,19 +139,19 @@ In addition, you may specify a "normal" (i.e., non-beam or non-AVM) file.  Norma
 
 > Note.  It is conventional in AtomVM for normal files to have the path `<module-name>/priv/<file-name>`.
 
-### Pruning
+#### Pruning
 
 If you specify the `--prune` (alternatively, `-p`) flag, then `packbeam` will only include beam files that are transitively dependent on the entry-point beam.  Transitive dependencies are determined by imports, as well as use of an atom in a module (e.g, as the result of a dynamic function call, based on a module name).
 
 If there is no beam file with a `start/0` entry-point defined in the list of input modules and the `--prune` flag is used, the command will fail.  You should _not_ use the `--prune` flag if you are trying to build libraries suitable for inclusion on other AtomVM applications.
 
-### Line number information
+#### Line number information
 
 By default, the `packbeam` tool will generate line number information for embedded BEAM files.  Line number information is included in Erlang stacktraces, giving developers more clues into bugs in their programs.  However, line number information does increase the size of AVM files, and in some cases can have an impact on memory in running applications.
 
 For production applications that have no need for line number information, we recommend using the `-r` (or `--remove_lines`) flags, which will strip line number information from embedded BEAM files.
 
-## `list` sub-command
+### `list` sub-command
 
 The `list` sub-command will print the contents of an AVM file to the standard output stream.
 
@@ -170,7 +171,7 @@ You may use the `--format` (alternatively, `-f`) option to specify an output for
 * `bare`  Output just the module name, with no annotations.
 * `default`  Output the module name, size (in brackets), and whether the file provides a `start/0` entrypoint, indicated by an asterisk (`*`).  The `default` output is used if the `--format` option is not specified.
 
-## `extract` sub-command
+### `extract` sub-command
 
 The `extract` sub-command can be used to extract elements from an AVM file.
 
@@ -190,7 +191,7 @@ For example:
     x mylib/priv/sample.txt
 
 
-## `delete` sub-command
+### `delete` sub-command
 
 The `delete` sub-command can be used to remove elements from an AVM file.
 
@@ -203,6 +204,93 @@ For example:
     mylib.beam * [284]
     mylib/priv/sample.txt [29]
 
-# `packbeam_api` API
+## `packbeam_api` API
 
-> TODO Used by rebar plugin
+In addition to being an `escript` command-line utility, this project provides an Erlang API and library for manipulating AVM files.  Simply include `atomvm_packbeam` as a dependency in your `rebar.config`, and you will have access to this API.
+
+> For more detailed information about this API, see the [`packbeam_api` Reference](packbeam_api.html).
+
+### Creating PackBEAM files
+
+To create a PackBEAM file, use the `packbeam_api:create/2` function.  Specify the output path of the AVM you would like to create, followed by a list of paths to the files that will go into the AVM file.  Typically, these paths are a list of BEAM files, though you can also include plain data files, in addition to previously created AVM files.  Previously-created AVM files will be copied into the output AVM file.
+
+> Note.  Specify the file system paths to all files.  BEAM file path information will be stripped from the AVM element path data.  Any plain data files (non-BEAM files) will retain their path information.  See the [AtomVM Documentation](https://www.atomvm.net/doc/master/) about how to create plain data files in AVM files that users can retrieved via the `atomvm:read_priv/2` function.
+
+    %% erlang
+    ok = packbeam_api:create(
+        "/path/to/output.avm", [
+            "/path/to/foo.beam",
+            "/path/to/bar.beam",
+            "/path/to/myapp/priv/sample.txt",
+            "/path/to/some_lib.avm"
+        ]
+    ).
+
+Alternatively, you may specify a set of options with the `packbeam_api:create/3` function, which takes a map as the third parameter.
+
+| Key | Type | Deafult | Description |
+|-----|------|---------|-------------|
+| `prune` | `boolean()` | `false` | Specify whether to prune the output AVM file.  Pruned AVM files can take considerably less space and hence may lead to faster development times. |
+| `start` | `module()` | n/a | Specify the start module, if it can't be determined automatically from the application. |
+| `application` | `module()` | n/a | Specify the application module.  The `<application>.app` file will be encoded and included as an element in the AVM file with the path `<module>/priv/application.bin` |
+| `include_lines` | `boolean()` | `true` | Specify whether to include line number information in generated AVM files. |
+
+### Listing the contents of PackBEAM files
+
+You can list the contents of PackBEAM files using the `packbeam_api:list/1` function.  Specify the file system path to the PackBEAM file you would like to list:
+
+    %% erlang
+    AVMElements = packbeam_api:list("/path/to/input.avm").
+
+The returned `AVMElements` is list of an opaque data structures and should not be interpreted by user applications.  However, several functions are exposed to retrieve information about elements in this list.
+
+To get the element name, use the `packbeam_api:get_element_name/1` function, passing in an AVM element.  The return type is a `string()` and represents the path in the AVM file for the AVM element.
+
+    %% erlang
+    AVMElementName = packbeam_api:get_element_name(AVMElement).
+
+To get the element data (as a binary) use the `packbeam_api:get_element_data/1` function, passing in an AVM element.  The return type is a `binary()` containing the actual data in the AVM element.
+
+    %% erlang
+    AVMElementData = packbeam_api:get_element_data(AVMElement).
+
+To get the element module (as an atom) use the `packbeam_api:get_element_module/1` function, passing in an AVM element.  The return type is a `module()` and the module name of the AVM element.
+
+Note that if the AVM element is not a BEAM file, this function returns `undefined`.
+
+    %% erlang
+    AVMElementModule = packbeam_api:get_element_module(AVMElement).
+
+To determine if the element is a BEAM file, use the `packbeam_api:is_beam/1` function, passing in an AVM element.  The return value is a `boolean()`.
+
+    %% erlang
+    IsBEAM = packbeam_api:is_beam(AVMElement).
+
+To determine if the element is an entrypoint BEAM (i.e., it exports a `start/0` function), use the `packbeam_api:is_entrypoint/1` function, passing in an AVM element.  The return value is a `boolean()`.
+
+    %% erlang
+    IsEntrypoint = packbeam_api:is_entrypoint(AVMElement).
+
+### Deleting entries from PackBEAM files
+
+You can delete entries from an AVM file using the `packbeam_api:delete/3` function. Specify the file system path to the PackBEAM file you would like to delete from, the output path you would like to write the new AVM file to, and a list of AVM elements you would like to delete:
+
+    %% erlang
+    ok = packbeam_api:delete(
+        "/path/to/input.avm",
+        "/path/to/ouput.avm",
+        ["foo.beam", "myapp/priv/sample.txt"]
+    ).
+
+> Note.  You may specify the same values for the input and output paths.  In this case, the input AVM file will be _over-written_ by the new AVM file.
+
+### Extracting entries from PackBEAM files
+
+You can extract elements from an AVM file using the `packbeam_api:extract/3` function. Specify the file system path to the PackBEAM file you would like to extract from, a list of AVM elements you would like to extract, and the output directory into which would like to extract the files:
+
+    %% erlang
+    ok = packbeam_api:extract(
+        "/path/to/input.avm",
+        ["foo.beam", "myapp/priv/sample.txt"],
+        "/tmp"
+    ).
