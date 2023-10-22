@@ -3,7 +3,7 @@
 ## All rights reserved.
 ##
 
-all: compile escript docs etest rel
+all: compile escript doc etest rel
 
 compile:
 	rebar3 compile
@@ -11,7 +11,7 @@ compile:
 escript:
 	rebar3 escriptize
 
-docs:
+doc:
 	rebar3 ex_doc
 
 etest:
