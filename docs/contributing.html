@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.30.7">
+    <meta name="project" content="atomvm_packbeam v0.7.2">
+
+    <title>Contributing — atomvm_packbeam v0.7.2</title>
+    <link rel="stylesheet" href="dist/html-erlang-BDSMJ657.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-EPF2X7PV.js"></script>
+    <script src="dist/sidebar_items-6B331F7B.js"></script>
+
+      <script src="docs_config.js"></script>
+
+    <script async src="dist/html-J2ASZTQE.js"></script>
+
+
+  </head>
+  <body data-type="extras" class="page-extra">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="main">
+
+<button class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+  <form class="sidebar-search" action="search.html">
+    <label class="search-label">
+      <span class="sr-only">Search documentation of atomvm_packbeam</span>
+      <input name="q" type="text" class="search-input" placeholder="Search..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+    </label>
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <i class="ri-search-2-line" aria-hidden="true" title="Submit search"></i>
+    </button>
+    <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+      <i class="ri-close-line ri-lg" title="Cancel search"></i>
+    </button>
+  </form>
+
+  <div class="autocomplete">
+    <div class="autocomplete-results">
+    </div>
+  </div>
+
+  <div class="sidebar-header">
+
+    <div class="sidebar-projectDetails">
+      <a href="readme.html" class="sidebar-projectName" translate="no">
+atomvm_packbeam
+      </a>
+      <div class="sidebar-projectVersion" translate="no">
+        v0.7.2
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+  <div class="content-outer">
+    <div id="content" class="content-inner">
+
+<h1>
+<button class="icon-action display-settings">
+  <i class="ri-settings-3-line"></i>
+  <span class="sr-only">Settings</span>
+</button>
+
+
+    <a href="https://github.com/atomvm/atomvm_packbeam/blob/v0.7.2/CONTRIBUTING.md#L1" title="View Source" class="icon-action" rel="help">
+      <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+      <span class="sr-only">View Source</span>
+    </a>
+
+
+  <span>Contributing</span>
+</h1>
+
+<p>Before contributing, please read carefully our <a href="CODE_OF_CONDUCT.md">Code of Conduct</a> and
+the following contribution guidelines.</p><p>Please, also make sure to understand the <a href="LICENSE.md">Apache 2.0 license</a> and the
+<a href="https://developercertificate.org/">Developer Certificate of Origin</a>.</p><p>Last but not least, <strong>do not use GitHub issues for vulnerability reports</strong>, read instead the
+<a href="SECURITY.md">security policy</a> for instructions.</p><h2 id="git-recommended-practises" class="section-heading">
+  <a href="#git-recommended-practises" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Git Recommended Practises</span>
+</h2>
+<ul><li>Commit messages should have a</li><li><a href="https://github.com/erlang/otp/wiki/writing-good-commit-messages">summary and a description</a></li><li>Avoid trailing white spaces</li><li>Always <code class="inline">git pull --rebase</code></li><li><a href="https://git-scm.com/book/id/v2/Git-Tools-Rewriting-History">Clean up your branch history</a> with
+<code class="inline">git rebase -i</code></li><li>All your intermediate commits should build</li></ul><h2 id="coding-style" class="section-heading">
+  <a href="#coding-style" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Coding Style</span>
+</h2>
+<h3 id="c-code" class="section-heading">
+  <a href="#c-code" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">C Code</span>
+</h3>
+<h4>Identation</h4><ul><li><a href="https://en.wikipedia.org/wiki/Indentation_style#K&R_style">K&amp;R identation and braces style</a></li><li><a href="https://en.wikipedia.org/wiki/Indentation_style#Variant:_mandatory_braces">Mandatory braces</a></li><li>4 spaces identation</li></ul><p>Good:</p><pre><code class="makeup erlang" translate="no"><span class="ss">void</span><span class="w"> </span><span class="nf">f</span><span class="p" data-group-id="4325921341-1">(</span><span class="ss">int</span><span class="w"> </span><span class="ss">reverse</span><span class="p" data-group-id="4325921341-1">)</span><span class="w">
+</span><span class="p" data-group-id="4325921341-2">{</span><span class="w">
+    </span><span class="nf">if</span><span class="w"> </span><span class="p" data-group-id="4325921341-3">(</span><span class="ss">reverse</span><span class="p" data-group-id="4325921341-3">)</span><span class="w"> </span><span class="p" data-group-id="4325921341-4">{</span><span class="w">
+        </span><span class="nf">puts</span><span class="p" data-group-id="4325921341-5">(</span><span class="s">&quot;!dlroW olleH&quot;</span><span class="p" data-group-id="4325921341-5">)</span><span class="p">;</span><span class="w">
+    </span><span class="p" data-group-id="4325921341-4">}</span><span class="w"> </span><span class="ss">else</span><span class="w"> </span><span class="p" data-group-id="4325921341-6">{</span><span class="w">
+        </span><span class="nf">puts</span><span class="p" data-group-id="4325921341-7">(</span><span class="s">&quot;Hello world&quot;</span><span class="p" data-group-id="4325921341-7">)</span><span class="p">;</span><span class="w">
+    </span><span class="p" data-group-id="4325921341-6">}</span><span class="w">
+</span><span class="p" data-group-id="4325921341-2">}</span></code></pre><p>Bad:</p><pre><code class="makeup erlang" translate="no"><span class="ss">void</span><span class="w"> </span><span class="nf">f</span><span class="p" data-group-id="6385386162-1">(</span><span class="ss">int</span><span class="w"> </span><span class="ss">reverse</span><span class="p" data-group-id="6385386162-1">)</span><span class="w"> </span><span class="p" data-group-id="6385386162-2">{</span><span class="w">
+    </span><span class="nf">if</span><span class="w"> </span><span class="p" data-group-id="6385386162-3">(</span><span class="ss">reverse</span><span class="p" data-group-id="6385386162-3">)</span><span class="w">
+        </span><span class="nf">puts</span><span class="w"> </span><span class="p" data-group-id="6385386162-4">(</span><span class="s">&quot;!dlroW olleH&quot;</span><span class="p" data-group-id="6385386162-4">)</span><span class="p">;</span><span class="w">
+    </span><span class="ss">else</span><span class="w">
+        </span><span class="nf">puts</span><span class="w"> </span><span class="p" data-group-id="6385386162-5">(</span><span class="s">&quot;Hello world&quot;</span><span class="p" data-group-id="6385386162-5">)</span><span class="p">;</span><span class="w">
+</span><span class="p" data-group-id="6385386162-2">}</span></code></pre><h4>Names</h4><ul><li>Struct names are PascalCase (e.g. Context)</li><li>Scalar types are lower case (e.g. term)</li><li>All other names (e.g. functions and variables) are snake_case (e.g. term_is_integer)</li><li>Always prefix function names (e.g. term_is_nil, term_is_integer, context_new, context_destroy)</li></ul><h4>Other Coding Conventions</h4><ul><li>Pointer <em> should be with the variable name rather than with the type (e.g. `char </em>name<code class="inline">, not</code>char* name`)</li><li>Avoid long lines, use intermediate variables with meaningful names.</li></ul><h3 id="elixir-code" class="section-heading">
+  <a href="#elixir-code" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Elixir Code</span>
+</h3>
+<p>Just use Elixir formatter enforced style.</p>
+<div class="bottom-actions">
+  <div class="bottom-actions-item">
+
+      <a href="license.html" class="bottom-actions-button" rel="prev">
+        <span class="subheader">
+          ← Previous Page
+        </span>
+        <span class="title">
+LICENSE
+        </span>
+      </a>
+
+  </div>
+  <div class="bottom-actions-item">
+
+      <a href="code_of_conduct.html" class="bottom-actions-button" rel="next">
+        <span class="subheader">
+          Next Page →
+        </span>
+        <span class="title">
+Contributor Covenant Code of Conduct
+        </span>
+      </a>
+
+  </div>
+</div>
+      <footer class="footer">
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/atomvm_packbeam/0.7.2" class="footer-hex-package">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/atomvm_packbeam/0.7.2">Hex Preview</a>
+
+                (<a href="https://preview.hex.pm/preview/atomvm_packbeam/0.7.2/show/CONTRIBUTING.md">current file</a>)
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+              Search HexDocs
+            </button>
+
+              <a href="atomvm_packbeam.epub" title="ePub version">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.30.7) for the
+
+            <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+        </p>
+      </footer>
+    </div>
+  </div>
+</main>
+</div>
+
+
+  </body>
+</html>

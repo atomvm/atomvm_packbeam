@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.30.7">
+    <meta name="project" content="atomvm_packbeam v0.7.2">
+
+    <title>atomvvm_packbeam — atomvm_packbeam v0.7.2</title>
+    <link rel="stylesheet" href="dist/html-erlang-BDSMJ657.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-EPF2X7PV.js"></script>
+    <script src="dist/sidebar_items-6B331F7B.js"></script>
+
+      <script src="docs_config.js"></script>
+
+    <script async src="dist/html-J2ASZTQE.js"></script>
+
+
+  </head>
+  <body data-type="extras" class="page-extra">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="main">
+
+<button class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+  <form class="sidebar-search" action="search.html">
+    <label class="search-label">
+      <span class="sr-only">Search documentation of atomvm_packbeam</span>
+      <input name="q" type="text" class="search-input" placeholder="Search..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+    </label>
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <i class="ri-search-2-line" aria-hidden="true" title="Submit search"></i>
+    </button>
+    <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+      <i class="ri-close-line ri-lg" title="Cancel search"></i>
+    </button>
+  </form>
+
+  <div class="autocomplete">
+    <div class="autocomplete-results">
+    </div>
+  </div>
+
+  <div class="sidebar-header">
+
+    <div class="sidebar-projectDetails">
+      <a href="readme.html" class="sidebar-projectName" translate="no">
+atomvm_packbeam
+      </a>
+      <div class="sidebar-projectVersion" translate="no">
+        v0.7.2
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+  <div class="content-outer">
+    <div id="content" class="content-inner">
+
+<h1>
+<button class="icon-action display-settings">
+  <i class="ri-settings-3-line"></i>
+  <span class="sr-only">Settings</span>
+</button>
+
+
+    <a href="https://github.com/atomvm/atomvm_packbeam/blob/v0.7.2/README.md#L1" title="View Source" class="icon-action" rel="help">
+      <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+      <span class="sr-only">View Source</span>
+    </a>
+
+
+  <span><code class="inline">atomvvm_packbeam</code></span>
+</h1>
+
+<p>An Erlang Escript and library used to generate an <a href="http://github.com/atomvm/AtomVM">AtomVM</a> AVM file from a set of files (beam files, previously built AVM files, or even arbitrary data files).</p><p>This tool roughly approximates the functionality of the AtomVM <a href="PackBEAM.html"><code class="inline">PackBEAM</code></a> utility, except:</p><ul><li>Support for multiple data types, include beam files, text files, etc</li><li>&quot;Pruned&quot; extraction of beams from AVM files, so that only the beams that are needed are packed</li><li>Support for embedded OTP applications in your PackBEAM files.</li></ul><p>The <a href="packbeam.html"><code class="inline">packbeam</code></a> tool may be used on its own as a stand-alone command-line utility.  More typically, it is used internally as part of the <a href="https://github.com/atomvm/atomvm_rebar3_plugin"><code class="inline">atomvm_rebar3_plugin</code></a> <a href="https://rebar3.org"><code class="inline">rebar3</code></a> plugin.</p><h2 id="prerequisites" class="section-heading">
+  <a href="#prerequisites" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Prerequisites</span>
+</h2>
+<p>Building <a href="packbeam.html"><code class="inline">packbeam</code></a> requires a version of Erlang/OTP compatible with <a href="https://github.com/atomvm/AtomVM">AtomVM</a>, as well as a local installation of <a href="https://rebar3.org"><code class="inline">rebar3</code></a>.  Optionally, any recent version of <a href="https://www.erlang.org/doc/man/make.html"><code class="inline">make</code></a> may be used to simplify builds.  Consult the <a href="https://www.atomvm.net/doc/master/">AtomVM Documentation</a> for information about supported OTP versions.</p><h2 id="build" class="section-heading">
+  <a href="#build" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Build</span>
+</h2>
+<p>To build a release, run the following commands:</p><pre><code class="makeup erlang" translate="no"><span class="ss">shell</span><span class="sc">$ </span><span class="ss">rebar3</span><span class="w"> </span><span class="ss">release</span><span class="w">
+</span><span class="ss">shell</span><span class="sc">$ </span><span class="ss">rebar3</span><span class="w"> </span><span class="ss">tar</span></code></pre><p>These commands will create an Erlang tar archive containing a versioned release of the <code class="inline">atomvm_packbeam</code> tool, e.g.,</p><pre><code class="makeup erlang" translate="no"><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="w">
+</span><span class="o">==</span><span class="p">=&gt;</span><span class="w"> </span><span class="n">Tarball</span><span class="w"> </span><span class="ss">successfully</span><span class="w"> </span><span class="nc">created</span><span class="p">:</span><span class="w"> </span><span class="p">_</span><span class="ss">build</span><span class="o">/</span><span class="ss">prod</span><span class="o">/</span><span class="ss">rel</span><span class="o">/</span><span class="ss">atomvm_packbeam</span><span class="o">/</span><span class="ss">atomvm_packbeam</span><span class="o">-</span><span class="mf">0.6</span><span class="p">.</span><span class="mi">2</span><span class="p">.</span><span class="ss">tar</span><span class="p">.</span><span class="ss">gz</span></code></pre><p>in your local working directory.</p><blockquote><p>IMPORTANT!  The files in this tar archive do not contain the <code class="inline">atomvm_packbeam</code> prefix, so extracting these files without care will create a <code class="inline">bin</code> and <code class="inline">lib</code> directory in the location into which files from the archive is extracted.  See the example below before proceeding!</p></blockquote><p>You can use the <code class="inline">install.sh</code> script to install the <code class="inline">atomvm_packbeam</code> utility into a location on your local machine.  You will need to specify the prefix location into which you want to install the utility, together with it's current version.</p><pre><code class="makeup erlang" translate="no"><span class="ss">shell</span><span class="sc">$ </span><span class="p">.</span><span class="o">/</span><span class="ss">install</span><span class="p">.</span><span class="ss">sh</span><span class="w"> </span><span class="o">/</span><span class="ss">opt</span><span class="o">/</span><span class="ss">atomvm_packbeam</span><span class="w"> </span><span class="mf">0.6</span><span class="p">.</span><span class="mi">2</span><span class="w">
+</span><span class="ss">atomvm_packbeam</span><span class="w"> </span><span class="ss">version</span><span class="w"> </span><span class="mf">0.6</span><span class="p">.</span><span class="mi">2</span><span class="w"> </span><span class="ss">installed</span><span class="w"> </span><span class="ss">in</span><span class="w"> </span><span class="o">/</span><span class="ss">opt</span><span class="o">/</span><span class="ss">atomvm_packbeam</span><span class="p">.</span></code></pre><blockquote><p>Note.  Some prefix locations may require <code class="inline">root</code> permissions to write files to.</p></blockquote><p>Set your <code class="inline">PATH</code> environment variable to include the <code class="inline">bin</code> directory of the installation prefix (if not already set), and you should then be able to run the <a href="packbeam.html"><code class="inline">packbeam</code></a> command included therein.</p><p>For example:</p><pre><code class="makeup erlang" translate="no"><span class="ss">shell</span><span class="sc">$ </span><span class="ss">export</span><span class="w"> </span><span class="n">PATH</span><span class="o">=</span><span class="o">/</span><span class="ss">opt</span><span class="o">/</span><span class="ss">atomvm_packbeam</span><span class="o">/</span><span class="nc">bin</span><span class="p">:</span><span class="sc">$P</span><span class="n">ATH</span><span class="w">
+</span><span class="ss">shell</span><span class="sc">$ </span><span class="ss">packbeam</span><span class="w"> </span><span class="ss">help</span><span class="w">
+</span><span class="n">Syntax</span><span class="p">:</span><span class="w">
+    </span><span class="ss">packbeam</span><span class="w"> </span><span class="o">&lt;</span><span class="ss">sub</span><span class="o">-</span><span class="ss">command</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&lt;</span><span class="ss">options</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&lt;</span><span class="ss">args</span><span class="o">&gt;</span><span class="w">
+    </span><span class="p">.</span><span class="p">.</span><span class="p">.</span></code></pre><h2 id="packbeam-command" class="section-heading">
+  <a href="#packbeam-command" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text"><a href="packbeam.html"><code class="inline">packbeam</code></a> command</span>
+</h2>
+<p>The <a href="packbeam.html"><code class="inline">packbeam</code></a> command is used to create an AVM file from a list of beam and other file types, to list the contents of an AVM file, or to delete elements from an AVM file.</p><p>The general syntax of the <a href="packbeam.html"><code class="inline">packbeam</code></a> command takes the form:</p><pre><code class="makeup erlang" translate="no"><span class="ss">packbeam</span><span class="w"> </span><span class="o">&lt;</span><span class="ss">sub</span><span class="o">-</span><span class="ss">command</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&lt;</span><span class="ss">args</span><span class="o">&gt;</span></code></pre><p>On-line help is available via the <code class="inline">help</code> sub-command:</p><pre><code class="makeup erlang" translate="no"><span class="ss">shell</span><span class="sc">$ </span><span class="ss">packbeam</span><span class="w"> </span><span class="ss">help</span><span class="w">
+
+</span><span class="ss">packbeam</span><span class="w"> </span><span class="ss">version</span><span class="w"> </span><span class="mf">0.7</span><span class="p">.</span><span class="mi">2</span><span class="w">
+
+</span><span class="n">Syntax</span><span class="p">:</span><span class="w">
+    </span><span class="ss">packbeam</span><span class="w"> </span><span class="o">&lt;</span><span class="ss">sub</span><span class="o">-</span><span class="ss">command</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&lt;</span><span class="ss">options</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&lt;</span><span class="ss">args</span><span class="o">&gt;</span><span class="w">
+
+</span><span class="n">The</span><span class="w"> </span><span class="ss">following</span><span class="w"> </span><span class="ss">sub</span><span class="o">-</span><span class="ss">commands</span><span class="w"> </span><span class="ss">are</span><span class="w"> </span><span class="nc">supported</span><span class="p">:</span><span class="w">
+
+    </span><span class="ss">create</span><span class="w"> </span><span class="o">&lt;</span><span class="ss">options</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&lt;</span><span class="ss">output</span><span class="o">-</span><span class="ss">avm</span><span class="o">-</span><span class="ss">file</span><span class="o">&gt;</span><span class="w"> </span><span class="p" data-group-id="7299580549-1">[</span><span class="o">&lt;</span><span class="ss">input</span><span class="o">-</span><span class="ss">file</span><span class="o">&gt;</span><span class="p" data-group-id="7299580549-1">]</span><span class="o">+</span><span class="w">
+        </span><span class="nc">where</span><span class="p">:</span><span class="w">
+        </span><span class="o">&lt;</span><span class="ss">output</span><span class="o">-</span><span class="ss">avm</span><span class="o">-</span><span class="ss">file</span><span class="o">&gt;</span><span class="w"> </span><span class="ss">is</span><span class="w"> </span><span class="ss">the</span><span class="w"> </span><span class="ss">output</span><span class="w"> </span><span class="n">AVM</span><span class="w"> </span><span class="ss">file</span><span class="p">,</span><span class="w">
+        </span><span class="p" data-group-id="7299580549-2">[</span><span class="o">&lt;</span><span class="ss">input</span><span class="o">-</span><span class="ss">file</span><span class="o">&gt;</span><span class="p" data-group-id="7299580549-2">]</span><span class="o">+</span><span class="w"> </span><span class="ss">is</span><span class="w"> </span><span class="ss">a</span><span class="w"> </span><span class="ss">list</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="ss">one</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="ss">more</span><span class="w"> </span><span class="ss">input</span><span class="w"> </span><span class="ss">files</span><span class="p">,</span><span class="w">
+        </span><span class="ow">and</span><span class="w"> </span><span class="o">&lt;</span><span class="ss">options</span><span class="o">&gt;</span><span class="w"> </span><span class="ss">are</span><span class="w"> </span><span class="ss">among</span><span class="w"> </span><span class="ss">the</span><span class="w"> </span><span class="nc">following</span><span class="p">:</span><span class="w">
+            </span><span class="p" data-group-id="7299580549-3">[</span><span class="o">--</span><span class="ss">prune</span><span class="p">|</span><span class="o">-</span><span class="ss">p</span><span class="p" data-group-id="7299580549-3">]</span><span class="w">           </span><span class="n">Prune</span><span class="w"> </span><span class="ss">dependencies</span><span class="w">
+            </span><span class="p" data-group-id="7299580549-4">[</span><span class="o">--</span><span class="ss">start</span><span class="p">|</span><span class="o">-</span><span class="ss">s</span><span class="w"> </span><span class="o">&lt;</span><span class="ss">module</span><span class="o">&gt;</span><span class="p" data-group-id="7299580549-4">]</span><span class="w">  </span><span class="n">Start</span><span class="w"> </span><span class="ss">module</span><span class="w">
+            </span><span class="p" data-group-id="7299580549-5">[</span><span class="o">--</span><span class="ss">remove_lines</span><span class="p">|</span><span class="o">-</span><span class="ss">r</span><span class="p" data-group-id="7299580549-5">]</span><span class="w">    </span><span class="n">Remove</span><span class="w"> </span><span class="ss">line</span><span class="w"> </span><span class="ss">number</span><span class="w"> </span><span class="ss">information</span><span class="w"> </span><span class="ss">from</span><span class="w"> </span><span class="n">AVM</span><span class="w"> </span><span class="ss">files</span><span class="w">
+
+    </span><span class="ss">list</span><span class="w"> </span><span class="o">&lt;</span><span class="ss">options</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&lt;</span><span class="ss">avm</span><span class="o">-</span><span class="ss">file</span><span class="o">&gt;</span><span class="w">
+        </span><span class="nc">where</span><span class="p">:</span><span class="w">
+        </span><span class="o">&lt;</span><span class="ss">avm</span><span class="o">-</span><span class="ss">file</span><span class="o">&gt;</span><span class="w"> </span><span class="ss">is</span><span class="w"> </span><span class="ss">an</span><span class="w"> </span><span class="n">AVM</span><span class="w"> </span><span class="ss">file</span><span class="p">,</span><span class="w">
+        </span><span class="ow">and</span><span class="w"> </span><span class="o">&lt;</span><span class="ss">options</span><span class="o">&gt;</span><span class="w"> </span><span class="ss">are</span><span class="w"> </span><span class="ss">among</span><span class="w"> </span><span class="ss">the</span><span class="w"> </span><span class="nc">following</span><span class="p">:</span><span class="w">
+            </span><span class="p" data-group-id="7299580549-6">[</span><span class="o">--</span><span class="ss">format</span><span class="p">|</span><span class="o">-</span><span class="ss">f</span><span class="w"> </span><span class="ss">csv</span><span class="p">|</span><span class="ss">bare</span><span class="p">|</span><span class="ss">default</span><span class="p" data-group-id="7299580549-6">]</span><span class="w">  </span><span class="n">Format</span><span class="w"> </span><span class="ss">output</span><span class="w">
+
+    </span><span class="ss">extract</span><span class="w"> </span><span class="o">&lt;</span><span class="ss">options</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&lt;</span><span class="ss">avm</span><span class="o">-</span><span class="ss">file</span><span class="o">&gt;</span><span class="w"> </span><span class="p" data-group-id="7299580549-7">[</span><span class="o">&lt;</span><span class="nb">element</span><span class="o">&gt;</span><span class="p" data-group-id="7299580549-7">]</span><span class="o">*</span><span class="w">
+        </span><span class="nc">where</span><span class="p">:</span><span class="w">
+        </span><span class="o">&lt;</span><span class="ss">avm</span><span class="o">-</span><span class="ss">file</span><span class="o">&gt;</span><span class="w"> </span><span class="ss">is</span><span class="w"> </span><span class="ss">an</span><span class="w"> </span><span class="n">AVM</span><span class="w"> </span><span class="ss">file</span><span class="p">,</span><span class="w">
+        </span><span class="p" data-group-id="7299580549-8">[</span><span class="o">&lt;</span><span class="nb">element</span><span class="o">&gt;</span><span class="p" data-group-id="7299580549-8">]</span><span class="o">+</span><span class="w"> </span><span class="ss">is</span><span class="w"> </span><span class="ss">a</span><span class="w"> </span><span class="ss">list</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="ss">one</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="ss">more</span><span class="w"> </span><span class="ss">elements</span><span class="w"> </span><span class="ss">to</span><span class="w"> </span><span class="nf">extract</span><span class="w">
+            </span><span class="p" data-group-id="7299580549-9">(</span><span class="k">if</span><span class="w"> </span><span class="ss">empty</span><span class="p">,</span><span class="w"> </span><span class="ss">then</span><span class="w"> </span><span class="ss">extract</span><span class="w"> </span><span class="ss">all</span><span class="w"> </span><span class="ss">elements</span><span class="p" data-group-id="7299580549-9">)</span><span class="w">
+        </span><span class="ow">and</span><span class="w"> </span><span class="o">&lt;</span><span class="ss">options</span><span class="o">&gt;</span><span class="w"> </span><span class="ss">are</span><span class="w"> </span><span class="ss">among</span><span class="w"> </span><span class="ss">the</span><span class="w"> </span><span class="nc">following</span><span class="p">:</span><span class="w">
+            </span><span class="p" data-group-id="7299580549-10">[</span><span class="o">--</span><span class="ss">out</span><span class="p">|</span><span class="o">-</span><span class="ss">o</span><span class="w"> </span><span class="o">&lt;</span><span class="ss">output</span><span class="o">-</span><span class="ss">directory</span><span class="o">&gt;</span><span class="p" data-group-id="7299580549-10">]</span><span class="w">   </span><span class="n">Output</span><span class="w"> </span><span class="ss">directory</span><span class="w"> </span><span class="ss">into</span><span class="w"> </span><span class="ss">which</span><span class="w"> </span><span class="ss">to</span><span class="w"> </span><span class="ss">write</span><span class="w"> </span><span class="nf">elements</span><span class="w">
+            </span><span class="p" data-group-id="7299580549-11">(</span><span class="k">if</span><span class="w"> </span><span class="ss">unspecified</span><span class="p">,</span><span class="w"> </span><span class="ss">use</span><span class="w"> </span><span class="ss">the</span><span class="w"> </span><span class="ss">current</span><span class="w"> </span><span class="ss">working</span><span class="w"> </span><span class="ss">directory</span><span class="p" data-group-id="7299580549-11">)</span><span class="w">
+
+    </span><span class="ss">delete</span><span class="w"> </span><span class="o">&lt;</span><span class="ss">options</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&lt;</span><span class="ss">avm</span><span class="o">-</span><span class="ss">file</span><span class="o">&gt;</span><span class="w"> </span><span class="p" data-group-id="7299580549-12">[</span><span class="o">&lt;</span><span class="nb">element</span><span class="o">&gt;</span><span class="p" data-group-id="7299580549-12">]</span><span class="o">+</span><span class="w">
+        </span><span class="nc">where</span><span class="p">:</span><span class="w">
+        </span><span class="o">&lt;</span><span class="ss">avm</span><span class="o">-</span><span class="ss">file</span><span class="o">&gt;</span><span class="w"> </span><span class="ss">is</span><span class="w"> </span><span class="ss">an</span><span class="w"> </span><span class="n">AVM</span><span class="w"> </span><span class="ss">file</span><span class="p">,</span><span class="w">
+        </span><span class="p" data-group-id="7299580549-13">[</span><span class="o">&lt;</span><span class="nb">element</span><span class="o">&gt;</span><span class="p" data-group-id="7299580549-13">]</span><span class="o">+</span><span class="w"> </span><span class="ss">is</span><span class="w"> </span><span class="ss">a</span><span class="w"> </span><span class="ss">list</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="ss">one</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="ss">more</span><span class="w"> </span><span class="ss">elements</span><span class="w"> </span><span class="ss">to</span><span class="w"> </span><span class="ss">delete</span><span class="p">,</span><span class="w">
+        </span><span class="ow">and</span><span class="w"> </span><span class="o">&lt;</span><span class="ss">options</span><span class="o">&gt;</span><span class="w"> </span><span class="ss">are</span><span class="w"> </span><span class="ss">among</span><span class="w"> </span><span class="ss">the</span><span class="w"> </span><span class="nc">following</span><span class="p">:</span><span class="w">
+            </span><span class="p" data-group-id="7299580549-14">[</span><span class="o">--</span><span class="ss">out</span><span class="p">|</span><span class="o">-</span><span class="ss">o</span><span class="w"> </span><span class="o">&lt;</span><span class="ss">output</span><span class="o">-</span><span class="ss">avm</span><span class="o">-</span><span class="ss">file</span><span class="o">&gt;</span><span class="p" data-group-id="7299580549-14">]</span><span class="w">    </span><span class="n">Output</span><span class="w"> </span><span class="n">AVM</span><span class="w"> </span><span class="ss">file</span><span class="w">
+
+    </span><span class="ss">version</span><span class="w">
+        </span><span class="n">Print</span><span class="w"> </span><span class="ss">version</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="nb">exit</span><span class="w">
+
+    </span><span class="ss">help</span><span class="w">
+        </span><span class="n">Print</span><span class="w"> </span><span class="ss">this</span><span class="w"> </span><span class="ss">help</span></code></pre><p>The <a href="packbeam.html"><code class="inline">packbeam</code></a> command will return an exit status of 0 on successful completion of a command.  An unspecified non-zero value is returned in the event of an error.</p><p>The <a href="packbeam.html"><code class="inline">packbeam</code></a> sub-commands are described in more detail below.</p><h3 id="create-sub-command" class="section-heading">
+  <a href="#create-sub-command" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text"><code class="inline">create</code> sub-command</span>
+</h3>
+<p>To create an AVM file from a list of beam files, use the <code class="inline">create</code> sub-command to create an AVM file.  The first argument is take to be the output AVM file, following by the files you would like to add, e.g.,</p><pre><code class="makeup erlang" translate="no"><span class="ss">shell</span><span class="sc">$ </span><span class="ss">packbeam</span><span class="w"> </span><span class="ss">create</span><span class="w"> </span><span class="ss">mylib</span><span class="p">.</span><span class="ss">avm</span><span class="w"> </span><span class="ss">mylib</span><span class="o">/</span><span class="ss">ebin</span><span class="o">/</span><span class="ss">mylib</span><span class="p">.</span><span class="ss">beam</span><span class="w"> </span><span class="ss">mylib</span><span class="o">/</span><span class="ss">ebin</span><span class="o">/</span><span class="ss">foo</span><span class="p">.</span><span class="ss">beam</span><span class="w"> </span><span class="ss">mylib</span><span class="o">/</span><span class="ss">ebin</span><span class="o">/</span><span class="ss">bar</span><span class="p">.</span><span class="ss">beam</span></code></pre><p>This command will create an AtomVM AVM file suitable for use with AtomVM.</p><p>The input files specified in the create subcommand may be among the following types:</p><ul><li>compiled BEAM files (typically ending in <code class="inline">.beam</code>)</li><li>Previously created AVM files</li><li>&quot;Normal&quot; files, e.g., text files, binary files, etc.</li></ul><p>Note that beam files specified are stripped of their path information, inside of the generated AVM file.  Any files that have the same name will be added in the order they are listed on the command line.  However, AtomVM will only resolve the first such file when loading modules at run-time.</p><h4>Start Entrypoint</h4><p>If you are building an application that provides a start entrypoint (as opposed to a library, suitable for inclusion in another AVM file), then at least one beam module in an AVM file must contain a <code class="inline">start/0</code> entry-point, i.e., a function called <code class="inline">start</code> with arity 0.  AtomVM will use this entry-point as the first function to execute, when starting.</p><blockquote><p>Note.  It is conventional, but not required, that the first beam file in an AVM file contains the <code class="inline">start/0</code> entry-point.  AtomVM will use the first BEAM file that contains an exported <code class="inline">start/0</code> function as the entry-point for the application.</p></blockquote><p>If your application has multiple modules with exported <code class="inline">start/0</code> functions, you may use the <code class="inline">--start &lt;module&gt;</code>  (alternatively, <code class="inline">-s &lt;module&gt;</code>) option to specify the module you would like placed first in your AVM file.  The <code class="inline">&lt;module&gt;</code> parameter should be the module name (without the <code class="inline">.beam</code> suffix, e.g., <code class="inline">main</code>).</p><p>A previously created AVM file file may be supplied as input (including the same file specified as output, for example).  The contents of any input AVM files will be included in the output AVM file.  For example, if you are building a library of BEAM files (for example, none of which contain a <code class="inline">start/0</code> entry-point), you may want to archive these into an AVM file, which can be used for downstream applications.</p><p>In addition, you may specify a &quot;normal&quot; (i.e., non-beam or non-AVM) file.  Normal files are labeled with the path specified on the command line.</p><pre><code class="makeup erlang" translate="no"><span class="ss">shell</span><span class="sc">$ </span><span class="ss">packbeam</span><span class="w"> </span><span class="ss">create</span><span class="w"> </span><span class="ss">mylib</span><span class="p">.</span><span class="ss">avm</span><span class="w"> </span><span class="ss">mylib</span><span class="p">.</span><span class="ss">avm</span><span class="w"> </span><span class="ss">mylib</span><span class="o">/</span><span class="ss">priv</span><span class="o">/</span><span class="ss">sample</span><span class="p">.</span><span class="ss">txt</span></code></pre><blockquote><p>Note.  It is conventional in AtomVM for normal files to have the path <code class="inline">&lt;module-name&gt;/priv/&lt;file-name&gt;</code>.</p></blockquote><h4>Pruning</h4><p>If you specify the <code class="inline">--prune</code> (alternatively, <code class="inline">-p</code>) flag, then <a href="packbeam.html"><code class="inline">packbeam</code></a> will only include beam files that are transitively dependent on the entry-point beam.  Transitive dependencies are determined by imports, as well as use of an atom in a module (e.g, as the result of a dynamic function call, based on a module name).</p><p>If there is no beam file with a <code class="inline">start/0</code> entry-point defined in the list of input modules and the <code class="inline">--prune</code> flag is used, the command will fail.  You should <em>not</em> use the <code class="inline">--prune</code> flag if you are trying to build libraries suitable for inclusion on other AtomVM applications.</p><h4>Line number information</h4><p>By default, the <a href="packbeam.html"><code class="inline">packbeam</code></a> tool will generate line number information for embedded BEAM files.  Line number information is included in Erlang stacktraces, giving developers more clues into bugs in their programs.  However, line number information does increase the size of AVM files, and in some cases can have an impact on memory in running applications.</p><p>For production applications that have no need for line number information, we recommend using the <code class="inline">-r</code> (or <code class="inline">--remove_lines</code>) flags, which will strip line number information from embedded BEAM files.</p><h3 id="list-sub-command" class="section-heading">
+  <a href="#list-sub-command" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text"><code class="inline">list</code> sub-command</span>
+</h3>
+<p>The <code class="inline">list</code> sub-command will print the contents of an AVM file to the standard output stream.</p><p>To list the elements of an AVM file, specify the location of the AVM file to input as the first argument:</p><pre><code class="makeup erlang" translate="no"><span class="ss">shell</span><span class="sc">$ </span><span class="ss">packbeam</span><span class="w"> </span><span class="ss">list</span><span class="w"> </span><span class="ss">mylib</span><span class="p">.</span><span class="ss">avm</span><span class="w">
+</span><span class="ss">mylib</span><span class="p">.</span><span class="ss">beam</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p" data-group-id="4001602489-1">[</span><span class="mi">284</span><span class="p" data-group-id="4001602489-1">]</span><span class="w">
+</span><span class="ss">foo</span><span class="p">.</span><span class="ss">beam</span><span class="w"> </span><span class="p" data-group-id="4001602489-2">[</span><span class="mi">276</span><span class="p" data-group-id="4001602489-2">]</span><span class="w">
+</span><span class="ss">bar</span><span class="p">.</span><span class="ss">beam</span><span class="w"> </span><span class="p" data-group-id="4001602489-3">[</span><span class="mi">252</span><span class="p" data-group-id="4001602489-3">]</span><span class="w">
+</span><span class="ss">mylib</span><span class="o">/</span><span class="ss">priv</span><span class="o">/</span><span class="ss">sample</span><span class="p">.</span><span class="ss">txt</span><span class="w"> </span><span class="p" data-group-id="4001602489-4">[</span><span class="mi">29</span><span class="p" data-group-id="4001602489-4">]</span></code></pre><p>The elements in the AVM file are printed to the standard output stream and are listed on each line.  If a beam file contain an exported <code class="inline">start/0</code> function, it will be marked with an asterisk (<code class="inline">*</code>).  The size in bytes of each module is also printed in square brackets (<code class="inline">[]</code>).</p><p>You may use the <code class="inline">--format</code> (alternatively, <code class="inline">-f</code>) option to specify an output format.  The supported formats are:</p><ul><li><code class="inline">csv</code>  Output elements in comma-separated value format.  Fields include the module name, whether the element is a BEAM file, whether the element provides a <code class="inline">start/0</code> entrypoint, and the size (in bytes) of the element.</li><li><code class="inline">bare</code>  Output just the module name, with no annotations.</li><li><code class="inline">default</code>  Output the module name, size (in brackets), and whether the file provides a <code class="inline">start/0</code> entrypoint, indicated by an asterisk (<code class="inline">*</code>).  The <code class="inline">default</code> output is used if the <code class="inline">--format</code> option is not specified.</li></ul><h3 id="extract-sub-command" class="section-heading">
+  <a href="#extract-sub-command" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text"><code class="inline">extract</code> sub-command</span>
+</h3>
+<p>The <code class="inline">extract</code> sub-command can be used to extract elements from an AVM file.</p><p>To extract one or more elements from an AVM file, specify the location of the AVM file from which to extract elements, followed by the list of elements (as displayed via the <code class="inline">list</code> sub-command) to extract.  If no elements are listed, then all elements from the AVM file will be extracted.</p><p>Non-BEAM (&quot;normal&quot;) files that contain paths in their names will be extracted into a directory tree that reflects the path used in the element name.  For example, if the element name is <code class="inline">mylib/priv/sample.txt</code>, then the <code class="inline">sample.txt</code> file will be extracted into the <code class="inline">mylib/priv</code> directory (relative to the output directory, detailed below).</p><p>You may optionally specify an output directory using the <code class="inline">--out</code> option, which will contain the extracted contents of the input AVM file.  This directory must exist beforehand, or a runtime error will occur.  If no output directory is specified, elements will be extracted into the current working directory.</p><p>For example:</p><pre><code class="makeup erlang" translate="no"><span class="ss">shell</span><span class="sc">$ </span><span class="ss">mkdir</span><span class="w"> </span><span class="ss">mydir</span><span class="w">
+</span><span class="ss">shell</span><span class="sc">$ </span><span class="ss">packbeam</span><span class="w"> </span><span class="ss">extract</span><span class="w"> </span><span class="o">-</span><span class="ss">out</span><span class="w"> </span><span class="ss">mydir</span><span class="w"> </span><span class="ss">mylib</span><span class="p">.</span><span class="ss">avm</span><span class="w"> </span><span class="ss">foo</span><span class="p">.</span><span class="ss">beam</span><span class="w"> </span><span class="ss">mylib</span><span class="o">/</span><span class="ss">priv</span><span class="o">/</span><span class="ss">sample</span><span class="p">.</span><span class="ss">txt</span><span class="w">
+</span><span class="n">Writing</span><span class="w"> </span><span class="ss">to</span><span class="w"> </span><span class="ss">mydir</span><span class="w"> </span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="w">
+</span><span class="ss">x</span><span class="w"> </span><span class="ss">foo</span><span class="p">.</span><span class="ss">beam</span><span class="w">
+</span><span class="ss">x</span><span class="w"> </span><span class="ss">mylib</span><span class="o">/</span><span class="ss">priv</span><span class="o">/</span><span class="ss">sample</span><span class="p">.</span><span class="ss">txt</span></code></pre><h3 id="delete-sub-command" class="section-heading">
+  <a href="#delete-sub-command" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text"><code class="inline">delete</code> sub-command</span>
+</h3>
+<p>The <code class="inline">delete</code> sub-command can be used to remove elements from an AVM file.</p><p>To delete one or more elements from an AVM file, specify the location of the AVM file from which to remove elements, followed by the list of elements (as displayed via the <code class="inline">list</code> sub-command) to remove.  You may optionally specify an output AVM file using the <code class="inline">--out</code> option, which will contain the contents of the input AVM file, minus the specified elements.  If no output AVM is specified, the input AVM file will be overwritten.</p><p>For example:</p><pre><code class="makeup erlang" translate="no"><span class="ss">shell</span><span class="sc">$ </span><span class="ss">packbeam</span><span class="w"> </span><span class="ss">delete</span><span class="w"> </span><span class="o">-</span><span class="ss">out</span><span class="w"> </span><span class="ss">mylib2</span><span class="p">.</span><span class="ss">avm</span><span class="w"> </span><span class="ss">mylib</span><span class="p">.</span><span class="ss">avm</span><span class="w"> </span><span class="ss">foo</span><span class="p">.</span><span class="ss">beam</span><span class="w"> </span><span class="ss">bar</span><span class="p">.</span><span class="ss">beam</span><span class="w">
+</span><span class="ss">shell</span><span class="sc">$ </span><span class="ss">packbeam</span><span class="w"> </span><span class="ss">list</span><span class="w"> </span><span class="ss">mylib2</span><span class="p">.</span><span class="ss">avm</span><span class="w">
+</span><span class="ss">mylib</span><span class="p">.</span><span class="ss">beam</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p" data-group-id="3910466227-1">[</span><span class="mi">284</span><span class="p" data-group-id="3910466227-1">]</span><span class="w">
+</span><span class="ss">mylib</span><span class="o">/</span><span class="ss">priv</span><span class="o">/</span><span class="ss">sample</span><span class="p">.</span><span class="ss">txt</span><span class="w"> </span><span class="p" data-group-id="3910466227-2">[</span><span class="mi">29</span><span class="p" data-group-id="3910466227-2">]</span></code></pre><h2 id="packbeam_api-api" class="section-heading">
+  <a href="#packbeam_api-api" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text"><a href="packbeam_api.html"><code class="inline">packbeam_api</code></a> API</span>
+</h2>
+<p>In addition to being an <code class="inline">escript</code> command-line utility, this project provides an Erlang API and library for manipulating AVM files.  Simply include <code class="inline">atomvm_packbeam</code> as a dependency in your <code class="inline">rebar.config</code>, and you will have access to this API.</p><blockquote><p>For more detailed information about this API, see the <a href="packbeam_api.html"><code class="inline">packbeam_api</code> Reference</a>.</p></blockquote><h3 id="creating-packbeam-files" class="section-heading">
+  <a href="#creating-packbeam-files" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Creating PackBEAM files</span>
+</h3>
+<p>To create a PackBEAM file, use the <a href="packbeam_api.html#create/2"><code class="inline">packbeam_api:create/2</code></a> function.  Specify the output path of the AVM you would like to create, followed by a list of paths to the files that will go into the AVM file.  Typically, these paths are a list of BEAM files, though you can also include plain data files, in addition to previously created AVM files.  Previously-created AVM files will be copied into the output AVM file.</p><blockquote><p>Note.  Specify the file system paths to all files.  BEAM file path information will be stripped from the AVM element path data.  Any plain data files (non-BEAM files) will retain their path information.  See the <a href="https://www.atomvm.net/doc/master/">AtomVM Documentation</a> about how to create plain data files in AVM files that users can retrieved via the <code class="inline">atomvm:read_priv/2</code> function.</p></blockquote><pre><code class="makeup erlang" translate="no"><span class="c1">%% erlang</span><span class="w">
+</span><span class="ss">ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">packbeam_api</span><span class="p">:</span><span class="nf">create</span><span class="p" data-group-id="0121209718-1">(</span><span class="w">
+    </span><span class="s">&quot;/path/to/output.avm&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0121209718-2">[</span><span class="w">
+        </span><span class="s">&quot;/path/to/foo.beam&quot;</span><span class="p">,</span><span class="w">
+        </span><span class="s">&quot;/path/to/bar.beam&quot;</span><span class="p">,</span><span class="w">
+        </span><span class="s">&quot;/path/to/myapp/priv/sample.txt&quot;</span><span class="p">,</span><span class="w">
+        </span><span class="s">&quot;/path/to/some_lib.avm&quot;</span><span class="w">
+    </span><span class="p" data-group-id="0121209718-2">]</span><span class="w">
+</span><span class="p" data-group-id="0121209718-1">)</span><span class="p">.</span></code></pre><p>Alternatively, you may specify a set of options with the <a href="packbeam_api.html#create/3"><code class="inline">packbeam_api:create/3</code></a> function, which takes a map as the third parameter.</p><table><thead><tr><th style="text-align: left;">Key</th><th style="text-align: left;">Type</th><th style="text-align: left;">Deafult</th><th style="text-align: left;">Description</th></tr></thead><tbody><tr><td style="text-align: left;"><code class="inline">prune</code></td><td style="text-align: left;"><code class="inline">boolean()</code></td><td style="text-align: left;"><code class="inline">false</code></td><td style="text-align: left;">Specify whether to prune the output AVM file.  Pruned AVM files can take considerably less space and hence may lead to faster development times.</td></tr><tr><td style="text-align: left;"><code class="inline">start</code></td><td style="text-align: left;"><code class="inline">module()</code></td><td style="text-align: left;">n/a</td><td style="text-align: left;">Specify the start module, if it can't be determined automatically from the application.</td></tr><tr><td style="text-align: left;"><a href="https://www.erlang.org/doc/man/application.html"><code class="inline">application</code></a></td><td style="text-align: left;"><code class="inline">module()</code></td><td style="text-align: left;">n/a</td><td style="text-align: left;">Specify the application module.  The <code class="inline">&lt;application&gt;.app</code> file will be encoded and included as an element in the AVM file with the path <code class="inline">&lt;module&gt;/priv/application.bin</code></td></tr><tr><td style="text-align: left;"><code class="inline">include_lines</code></td><td style="text-align: left;"><code class="inline">boolean()</code></td><td style="text-align: left;"><code class="inline">true</code></td><td style="text-align: left;">Specify whether to include line number information in generated AVM files.</td></tr></tbody></table><h3 id="listing-the-contents-of-packbeam-files" class="section-heading">
+  <a href="#listing-the-contents-of-packbeam-files" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Listing the contents of PackBEAM files</span>
+</h3>
+<p>You can list the contents of PackBEAM files using the <a href="packbeam_api.html#list/1"><code class="inline">packbeam_api:list/1</code></a> function.  Specify the file system path to the PackBEAM file you would like to list:</p><pre><code class="makeup erlang" translate="no"><span class="c1">%% erlang</span><span class="w">
+</span><span class="n">AVMElements</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">packbeam_api</span><span class="p">:</span><span class="nf">list</span><span class="p" data-group-id="0712364796-1">(</span><span class="s">&quot;/path/to/input.avm&quot;</span><span class="p" data-group-id="0712364796-1">)</span><span class="p">.</span></code></pre><p>The returned <code class="inline">AVMElements</code> is list of an opaque data structures and should not be interpreted by user applications.  However, several functions are exposed to retrieve information about elements in this list.</p><p>To get the element name, use the <a href="packbeam_api.html#get_element_name/1"><code class="inline">packbeam_api:get_element_name/1</code></a> function, passing in an AVM element.  The return type is a <code class="inline">string()</code> and represents the path in the AVM file for the AVM element.</p><pre><code class="makeup erlang" translate="no"><span class="c1">%% erlang</span><span class="w">
+</span><span class="n">AVMElementName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">packbeam_api</span><span class="p">:</span><span class="nf">get_element_name</span><span class="p" data-group-id="8603662861-1">(</span><span class="n">AVMElement</span><span class="p" data-group-id="8603662861-1">)</span><span class="p">.</span></code></pre><p>To get the element data (as a binary) use the <a href="packbeam_api.html#get_element_data/1"><code class="inline">packbeam_api:get_element_data/1</code></a> function, passing in an AVM element.  The return type is a <code class="inline">binary()</code> containing the actual data in the AVM element.</p><pre><code class="makeup erlang" translate="no"><span class="c1">%% erlang</span><span class="w">
+</span><span class="n">AVMElementData</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">packbeam_api</span><span class="p">:</span><span class="nf">get_element_data</span><span class="p" data-group-id="2360485338-1">(</span><span class="n">AVMElement</span><span class="p" data-group-id="2360485338-1">)</span><span class="p">.</span></code></pre><p>To get the element module (as an atom) use the <a href="packbeam_api.html#get_element_module/1"><code class="inline">packbeam_api:get_element_module/1</code></a> function, passing in an AVM element.  The return type is a <code class="inline">module()</code> and the module name of the AVM element.</p><p>Note that if the AVM element is not a BEAM file, this function returns <code class="inline">undefined</code>.</p><pre><code class="makeup erlang" translate="no"><span class="c1">%% erlang</span><span class="w">
+</span><span class="n">AVMElementModule</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">packbeam_api</span><span class="p">:</span><span class="nf">get_element_module</span><span class="p" data-group-id="0507205187-1">(</span><span class="n">AVMElement</span><span class="p" data-group-id="0507205187-1">)</span><span class="p">.</span></code></pre><p>To determine if the element is a BEAM file, use the <a href="packbeam_api.html#is_beam/1"><code class="inline">packbeam_api:is_beam/1</code></a> function, passing in an AVM element.  The return value is a <code class="inline">boolean()</code>.</p><pre><code class="makeup erlang" translate="no"><span class="c1">%% erlang</span><span class="w">
+</span><span class="n">IsBEAM</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">packbeam_api</span><span class="p">:</span><span class="nf">is_beam</span><span class="p" data-group-id="2644737801-1">(</span><span class="n">AVMElement</span><span class="p" data-group-id="2644737801-1">)</span><span class="p">.</span></code></pre><p>To determine if the element is an entrypoint BEAM (i.e., it exports a <code class="inline">start/0</code> function), use the <a href="packbeam_api.html#is_entrypoint/1"><code class="inline">packbeam_api:is_entrypoint/1</code></a> function, passing in an AVM element.  The return value is a <code class="inline">boolean()</code>.</p><pre><code class="makeup erlang" translate="no"><span class="c1">%% erlang</span><span class="w">
+</span><span class="n">IsEntrypoint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">packbeam_api</span><span class="p">:</span><span class="nf">is_entrypoint</span><span class="p" data-group-id="5768564355-1">(</span><span class="n">AVMElement</span><span class="p" data-group-id="5768564355-1">)</span><span class="p">.</span></code></pre><h3 id="deleting-entries-from-packbeam-files" class="section-heading">
+  <a href="#deleting-entries-from-packbeam-files" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Deleting entries from PackBEAM files</span>
+</h3>
+<p>You can delete entries from an AVM file using the <a href="packbeam_api.html#delete/3"><code class="inline">packbeam_api:delete/3</code></a> function. Specify the file system path to the PackBEAM file you would like to delete from, the output path you would like to write the new AVM file to, and a list of AVM elements you would like to delete:</p><pre><code class="makeup erlang" translate="no"><span class="c1">%% erlang</span><span class="w">
+</span><span class="ss">ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">packbeam_api</span><span class="p">:</span><span class="nf">delete</span><span class="p" data-group-id="5926205840-1">(</span><span class="w">
+    </span><span class="s">&quot;/path/to/input.avm&quot;</span><span class="p">,</span><span class="w">
+    </span><span class="s">&quot;/path/to/ouput.avm&quot;</span><span class="p">,</span><span class="w">
+    </span><span class="p" data-group-id="5926205840-2">[</span><span class="s">&quot;foo.beam&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;myapp/priv/sample.txt&quot;</span><span class="p" data-group-id="5926205840-2">]</span><span class="w">
+</span><span class="p" data-group-id="5926205840-1">)</span><span class="p">.</span></code></pre><blockquote><p>Note.  You may specify the same values for the input and output paths.  In this case, the input AVM file will be <em>over-written</em> by the new AVM file.</p></blockquote><h3 id="extracting-entries-from-packbeam-files" class="section-heading">
+  <a href="#extracting-entries-from-packbeam-files" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Extracting entries from PackBEAM files</span>
+</h3>
+<p>You can extract elements from an AVM file using the <a href="packbeam_api.html#extract/3"><code class="inline">packbeam_api:extract/3</code></a> function. Specify the file system path to the PackBEAM file you would like to extract from, a list of AVM elements you would like to extract, and the output directory into which would like to extract the files:</p><pre><code class="makeup erlang" translate="no"><span class="c1">%% erlang</span><span class="w">
+</span><span class="ss">ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">packbeam_api</span><span class="p">:</span><span class="nf">extract</span><span class="p" data-group-id="3772647282-1">(</span><span class="w">
+    </span><span class="s">&quot;/path/to/input.avm&quot;</span><span class="p">,</span><span class="w">
+    </span><span class="p" data-group-id="3772647282-2">[</span><span class="s">&quot;foo.beam&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;myapp/priv/sample.txt&quot;</span><span class="p" data-group-id="3772647282-2">]</span><span class="p">,</span><span class="w">
+    </span><span class="s">&quot;/tmp&quot;</span><span class="w">
+</span><span class="p" data-group-id="3772647282-1">)</span><span class="p">.</span></code></pre>
+<div class="bottom-actions">
+  <div class="bottom-actions-item">
+
+      <a href="api-reference.html" class="bottom-actions-button" rel="prev">
+        <span class="subheader">
+          ← Previous Page
+        </span>
+        <span class="title">
+API Reference
+        </span>
+      </a>
+
+  </div>
+  <div class="bottom-actions-item">
+
+      <a href="changelog.html" class="bottom-actions-button" rel="next">
+        <span class="subheader">
+          Next Page →
+        </span>
+        <span class="title">
+Changelog
+        </span>
+      </a>
+
+  </div>
+</div>
+      <footer class="footer">
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/atomvm_packbeam/0.7.2" class="footer-hex-package">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/atomvm_packbeam/0.7.2">Hex Preview</a>
+
+                (<a href="https://preview.hex.pm/preview/atomvm_packbeam/0.7.2/show/README.md">current file</a>)
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+              Search HexDocs
+            </button>
+
+              <a href="atomvm_packbeam.epub" title="ePub version">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.30.7) for the
+
+            <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+        </p>
+      </footer>
+    </div>
+  </div>
+</main>
+</div>
+
+
+  </body>
+</html>
