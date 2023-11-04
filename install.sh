@@ -48,7 +48,7 @@ set -e
 readonly root_dir="$(cd $(dirname $0) && pwd)"
 
 readonly nargs=$#
-if [[ ${nargs} -lt 2 ]]; then
+if [ ${nargs} -lt 2 ]; then
     echo
     echo "Syntax: $0 <prefix> <version>"
     echo "    where <prefix> is the prefix location for the install"
@@ -84,8 +84,8 @@ echo_run cp "${src_tar}" "${tmp_dir}/."
 echo_run gunzip "${tmp_dir}/atomvm_packbeam-${version}.tar.gz"
 
 readonly dest_dir="${prefix}/atomvm_packbeam"
-if [ -e "${dest_dir}" ]; then
-    echo "ERROR! It looks like ${dest_dir} already exists!"
+if [ $(${dest_dir}/bin/packbeam version) = ${version} ]; then
+    echo "ERROR! It looks like ${version} is already installed!"
     exit 1
 fi
 
