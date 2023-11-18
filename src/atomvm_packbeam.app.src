@@ -25,7 +25,7 @@
         {applications, [kernel, stdlib]},
         {env, []},
         {modules, [packbeam_api]},
-        {licenses, ["Apache 2.0"]},
+        {licenses, ["Apache-2.0"]},
         {pkg_name, "atomvm_packbeam"},
         {links, [{"github", "https://github.com/atomvm/atomvm_packbeam"}]}
     ]
