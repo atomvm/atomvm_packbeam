@@ -65,16 +65,22 @@ if [ ! -e "${prefix}" ]; then
 fi
 
 echo_run() {
-    local cmd="$@"
+    cmd="$@"
     if [ -n "${PACKBEAM_DEBUG}" ]; then
         echo "# $(date) [$(hostname)]> ${cmd}"
     fi
     ${cmd}
 }
 
-readonly src_tar="${root_dir}/_build/default/rel/atomvm_packbeam/atomvm_packbeam-${version}.tar.gz"
+readonly src_tar="${root_dir}/_build/prod/rel/atomvm_packbeam/atomvm_packbeam-${version}.tar.gz"
 if [ ! -e "${src_tar}" ]; then
     echo "ERROR! It looks like atomvm_packbeam version ${version} has not been built!"
+    exit 1
+fi
+
+readonly dest_dir="${prefix}/atomvm_packbeam"
+if [ -e "${dest_dir}/bin/packbeam" ] && [ "$(${dest_dir}/bin/packbeam version)" == "${version}" ]; then
+    echo "ERROR! It looks like ${version} is already installed!"
     exit 1
 fi
 
@@ -82,12 +88,6 @@ fi
 readonly tmp_dir="$(mktemp -d /tmp/atomvm_packbeam.XXXXXX)"
 echo_run cp "${src_tar}" "${tmp_dir}/."
 echo_run gunzip "${tmp_dir}/atomvm_packbeam-${version}.tar.gz"
-
-readonly dest_dir="${prefix}/atomvm_packbeam"
-if [ $(${dest_dir}/bin/packbeam version) = ${version} ]; then
-    echo "ERROR! It looks like ${version} is already installed!"
-    exit 1
-fi
 
 echo_run mkdir -p "${dest_dir}"
 echo_run tar -C "${dest_dir}" -x -f "${tmp_dir}/atomvm_packbeam-${version}.tar"
