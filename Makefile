@@ -24,7 +24,7 @@ rel:
 	rebar3 as prod tar
 	rm -rf x
 	mkdir x
-	PACKBEAM_DEBUG=1 ./install.sh x 0.7.1
+	./install.sh x 0.7.2
 	x/bin/packbeam version
 
 clean:
