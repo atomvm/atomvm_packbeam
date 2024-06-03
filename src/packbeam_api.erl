@@ -120,7 +120,7 @@ create(OutputPath, InputPaths, Options) ->
         start_module := StartModule,
         application_module := ApplicationModule,
         include_lines := IncludeLines
-    } = Options,
+    } = maps:merge(?DEFAULT_OPTIONS, Options),
     ParsedFiles = parse_files(InputPaths, StartModule, IncludeLines),
     write_packbeam(
         OutputPath,
