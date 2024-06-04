@@ -1,4 +1,4 @@
-# `atomvvm_packbeam`
+# `atomvm_packbeam`
 
 An Erlang Escript and library used to generate an [AtomVM](http://github.com/atomvm/AtomVM) AVM file from a set of files (beam files, previously built AVM files, or even arbitrary data files).
 
@@ -19,7 +19,7 @@ Building `packbeam` requires a version of Erlang/OTP compatible with [AtomVM](ht
 To build a release, run the following commands:
 
     shell$ rebar3 release
-    shell$ rebar3 tar
+    shell$ rebar3 as prod tar
 
 These commands will create an Erlang tar archive containing a versioned release of the `atomvm_packbeam` tool, e.g.,
 
