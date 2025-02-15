@@ -9,9 +9,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.7.4] - Unreleased
+## [0.7.4] - (2025.05.25)
+
 - Add support for OTP-28
 - Added missing licences files, and CI workflow to ensure reuse compliance
+
+>This release includes changes from 0.7.3 that were not included in the release due to a bad release tag.
 
 ## [0.7.3] (2024.06.06)
 

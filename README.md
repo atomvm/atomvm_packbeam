@@ -64,7 +64,7 @@ On-line help is available via the `help` sub-command:
 
     shell$ packbeam help
 
-    packbeam version 0.7.2
+    packbeam version 0.7.4
 
     Syntax:
         packbeam <sub-command> <options> <args>
