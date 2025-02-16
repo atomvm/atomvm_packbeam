@@ -1,0 +1,67 @@
+#
+#  Copyright 2025 Winford (Uncle Grumpy) <winford@object.stream>
+#
+#  SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
+#
+# This is a workflow for atomvm/atomvm_packbeam to publish documentation to GitHub Pages
+
+name: Publish Docs
+
+on:
+  # Triggers the workflow on tags
+  push:
+   branches:
+      - 'master'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+
+  build:
+    runs-on: ubuntu-24.04
+    container: erlang:28
+    steps:
+
+    - name: "Checkout code"
+      uses: actions/checkout@v5
+
+    - name: "Setup Pages"
+      uses: actions/configure-pages@v5
+
+    - name: "Build Docs"
+      run: |
+        rebar3 as doc ex_doc
+
+    - name: Upload pages artifact
+      ## Must use v3 for now due to issue actions/deploy-pages#389
+      uses: actions/upload-pages-artifact@v3
+      with:
+        name: github-pages
+        path: ./docs
+
+  deploy:
+    # Add a dependency to the build job
+    needs: build
+
+    # Deploy to the github-pages environment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    # Specify runner + deployment step
+    runs-on: ubuntu-24.04
+    steps:
+
+      - name: "Setup Pages"
+        uses: actions/configure-pages@v5
+
+      - name: Deploy to GitHub Pages
+        if: ${{ github.repository == 'atomvm/atomvm_packbeam' }}
+        id: deployment
+        uses: actions/deploy-pages@v4
