@@ -1,0 +1,73 @@
+#
+#  Copyright 2025 Winford (Uncle Grumpy) <winford@object.stream>
+#
+#  SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
+#
+# This is a workflow for atomvm/atomvm_packbeam to publish documentation to GitHub Pages
+
+name: Publish Docs
+
+on:
+  # Triggers the workflow on tags
+  push:
+   branches:
+      - 'master'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+    - name: "Install deps"
+      run: |
+        sudo apt install -y make git
+
+    - uses: actions/checkout@v4
+      with:
+        repository: ${{ vars.GITHUB_REPOSITORY }}
+        fetch-depth: 0
+
+    - uses: erlef/setup-beam@5304e04ea2b355f03681464e683d92e3b2f18451
+      with:
+        otp-version: "27"
+
+    - name: "Build rebar3"
+      run: |
+        cd /tmp
+        git clone https://github.com/erlang/rebar3.git
+        cd rebar3
+        ./bootstrap
+
+    - name: "Build Docs"
+      run: |
+        git checkout -b updates
+        PATH="/tmp/rebar3:${PATH}" make doc
+
+    - name: Commit files
+      if: github.repository == 'atomvm/atomvm_packbeam'
+      run: |
+        git branch --show-current
+        git status
+        git config --local user.email "atomvm-doc-bot@object.stream"
+        git config --local user.name "AtomVM Doc Bot"
+        git status
+        git add .
+        git commit -m "Update Documentation ${{ github.ref_name }}"
+
+    - name: Push changes
+      if: github.repository == 'atomvm/atomvm_packbeam'
+      run: |
+        eval `ssh-agent -t 60 -s`
+        echo "${{ secrets.PUBLISH_KEY }}" | ssh-add -
+        mkdir -p ~/.ssh/
+        ssh-keyscan github.com >> ~/.ssh/known_hosts
+        git remote add live_pages "git@github.com:atomvm/atomvm_packbeam.git"
+        git fetch live_pages
+        git diff --quiet live_pages/gh-pages || echo "Pushing updated documentation"
+        git diff --quiet live_pages/gh-pages || git push --set-upstream live_pages updates:gh-pages -f
