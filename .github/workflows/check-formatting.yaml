@@ -1,0 +1,42 @@
+#
+#  Copyright 2022 Davide Bettio <davide@uninstall.it>
+#  Copyright 2025 Winford (Uncle Grumpy) <winford@object.stream>
+#
+#  SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
+#
+
+name: "Check Erlang Formatting"
+
+on:
+  push:
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - '**/*.erl'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - '**/*.erl'
+
+jobs:
+  format-check:
+    runs-on: ubuntu-24.04
+    container: erlang:27
+    steps:
+    - name: "Install deps"
+      run: |
+        apt install -y git
+
+    - name: "Install erlfmt"
+      run: |
+        cd ${HOME}
+        git clone --depth 1 -b v1.6.0 https://github.com/WhatsApp/erlfmt.git
+        cd erlfmt
+        rebar3 as release escriptize
+
+    - uses: actions/checkout@v4
+
+    - name: "Check formatting with erlfmt"
+      run: |
+        find . -name *.erl | xargs ${HOME}/erlfmt/_build/release/bin/erlfmt -c

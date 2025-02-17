@@ -1,7 +1,8 @@
 ##
-## Copyright (c) dushin.net
+## Copyright (c) 2020 dushin.net
 ## All rights reserved.
 ##
+## SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
 
 all: compile escript etest doc rel
 

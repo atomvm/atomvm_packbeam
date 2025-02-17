@@ -1,5 +1,5 @@
 %%
-%% Copyright (c) dushin.net
+%% Copyright (c) 2023 dushin.net
 %% All rights reserved.
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,12 +14,13 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
+%% SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
+
 -module(prop_packbeam).
 -include_lib("proper/include/proper.hrl").
 
 -define(BUILD_DIR, "_build/").
 -define(TEST_BEAM_DIR, "_build/test/lib/atomvm_packbeam/test/").
-
 
 %%
 %% Call graph for modules a-f, x
@@ -46,7 +47,9 @@
 %%
 
 prop_simple_test() ->
-    ?FORALL(ModulePaths, module_paths(),
+    ?FORALL(
+        ModulePaths,
+        module_paths(),
         begin
             Modules = [Module || {Module, _Path} <- ModulePaths],
             Paths = [Path || {_Module, Path} <- ModulePaths],
@@ -56,17 +59,18 @@ prop_simple_test() ->
                 begin
                     ok = packbeam_api:create(AVMFile, Paths),
                     ParsedFiles = packbeam_api:list(AVMFile),
-                    modules_and_parsed_files_are_equivalent(Modules, ParsedFiles)
-                        andalso all_beam_modules_are_properly_named(ParsedFiles)
-                        andalso maybe_contains_start_beam(Modules, a, ParsedFiles)
-                        andalso maybe_contains_start_beam(Modules, b, ParsedFiles)
+                    modules_and_parsed_files_are_equivalent(Modules, ParsedFiles) andalso
+                        all_beam_modules_are_properly_named(ParsedFiles) andalso
+                        maybe_contains_start_beam(Modules, a, ParsedFiles) andalso
+                        maybe_contains_start_beam(Modules, b, ParsedFiles)
                 end
             )
         end
     ).
 
 modules_and_parsed_files_are_equivalent(Modules, ParsedFiles) ->
-    lists:sort(Modules) =:= lists:sort([get_module(ParsedFile) || ParsedFile <- get_beam_files(ParsedFiles)]).
+    lists:sort(Modules) =:=
+        lists:sort([get_module(ParsedFile) || ParsedFile <- get_beam_files(ParsedFiles)]).
 
 all_beam_modules_are_properly_named(ParsedFiles) ->
     lists:all(
@@ -85,12 +89,13 @@ maybe_contains_start_beam(Modules, Module, ParsedFiles) ->
         true ->
             is_start(find_parsed_file(Module, ParsedFiles));
         _ ->
-            true %% ignore
+            %% ignore
+            true
     end.
 
 find_parsed_file(Module, []) ->
     {parsed_file_not_found, Module};
-find_parsed_file(Module, [ParsedFile|Rest]) ->
+find_parsed_file(Module, [ParsedFile | Rest]) ->
     case get_module(ParsedFile) of
         M when M =:= Module ->
             ParsedFile;
@@ -125,7 +130,8 @@ is_beam(ParsedFile) ->
 
 module_paths() ->
     ?LET(
-        Modules, list(oneof([a, b, c, d, e, f])),
+        Modules,
+        list(oneof([a, b, c, d, e, f])),
         remove_duplicates([{Module, test_beam_path(Module)} || Module <- Modules])
     ).
 

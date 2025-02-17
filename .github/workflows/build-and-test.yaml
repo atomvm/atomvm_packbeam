@@ -11,6 +11,9 @@ on: [push, pull_request]
 jobs:
   build-and-test:
     runs-on: "ubuntu-24.04"
+    permissions:
+      contents: read
+      pull-requests: read
     strategy:
       matrix:
         otp: ["25", "26", "27"]
@@ -22,7 +25,7 @@ jobs:
       with:
         submodules: 'recursive'
 
-    - uses: erlef/setup-beam@v1
+    - uses: erlef/setup-beam@5304e04ea2b355f03681464e683d92e3b2f18451
       with:
         otp-version: ${{ matrix.otp }}
 
