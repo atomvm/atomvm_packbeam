@@ -1,3 +1,8 @@
+<!--
+ Copyright 2022 Fred Dushin <fred@dushin.net>
+
+ SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
+-->
 # Changelog
 All notable changes to this project will be documented in this file.
 
