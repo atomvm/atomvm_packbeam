@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.7.4] - Unreleased
 - Add support for OTP-28
+- Added missing licences files, and CI workflow to ensure reuse compliance
 
 ## [0.7.3] (2024.06.06)
 
