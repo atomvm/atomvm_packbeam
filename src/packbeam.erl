@@ -181,7 +181,8 @@ do_create(Opts, Args) ->
     validate_args(create, Opts, Args),
     [OutputFile | InputFiles] = Args,
     ok = packbeam_api:create(
-        OutputFile, InputFiles,
+        OutputFile,
+        InputFiles,
         #{
             prune => maps:get(prune, Opts, false),
             start_module => maps:get(start_module, Opts, undefined),
@@ -312,7 +313,6 @@ parse_args(Argv) ->
 %% @private
 parse_args([], {Opts, Args}) ->
     {Opts, lists:reverse(Args)};
-
 parse_args(["-out", Path | T], {Opts, Args}) ->
     io:format("WARNING.  Deprecated option.  Use --out instead.~n"),
     parse_args(["--out", Path | T], {Opts, Args});
@@ -320,7 +320,6 @@ parse_args(["-o", Path | T], {Opts, Args}) ->
     parse_args(["--out", Path | T], {Opts, Args});
 parse_args(["--out", Path | T], {Opts, Args}) ->
     parse_args(T, {Opts#{output => Path}, Args});
-
 parse_args(["-prune" | T], {Opts, Args}) ->
     io:format("WARNING.  Deprecated option.  Use --prune instead.~n"),
     parse_args(["--prune" | T], {Opts, Args});
@@ -328,7 +327,6 @@ parse_args(["-p" | T], {Opts, Args}) ->
     parse_args(["--prune" | T], {Opts, Args});
 parse_args(["--prune" | T], {Opts, Args}) ->
     parse_args(T, {Opts#{prune => true}, Args});
-
 parse_args(["-start", Module | T], {Opts, Args}) ->
     io:format("WARNING.  Deprecated option.  Use --start instead.~n"),
     parse_args(["--start", Module | T], {Opts, Args});
@@ -336,12 +334,10 @@ parse_args(["-s", Module | T], {Opts, Args}) ->
     parse_args(["--start", Module | T], {Opts, Args});
 parse_args(["--start", Module | T], {Opts, Args}) ->
     parse_args(T, {Opts#{start_module => list_to_atom(Module)}, Args});
-
 parse_args(["-r" | T], {Opts, Args}) ->
     parse_args(["--remove_lines" | T], {Opts, Args});
 parse_args(["--remove_lines" | T], {Opts, Args}) ->
     parse_args(T, {Opts#{remove_lines => true}, Args});
-
 parse_args(["-format", Format | T], {Opts, Args}) ->
     io:format("WARNING.  Deprecated option.  Use --format instead.~n"),
     parse_args(["--format", Format | T], {Opts, Args});
