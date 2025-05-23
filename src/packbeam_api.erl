@@ -586,7 +586,7 @@ filter_modules(Modules, ParsedFiles) ->
 %% @private
 parse_file(beam, _ModuleName, Data, IncludeLines) ->
     {ok, Module, Chunks} = beam_lib:all_chunks(Data),
-    {UncompressedChunks, UncompressedLiterals} = uncompress_literals(Chunks),
+    {UncompressedChunks, UncompressedLiterals} = maybe_uncompress_literals(Chunks),
     FilteredChunks = filter_chunks(UncompressedChunks, IncludeLines),
     {ok, Binary} = beam_lib:build_module(FilteredChunks),
     {ok, {Module, ChunkRefs}} = beam_lib:chunks(Data, [imports, exports, atoms]),
@@ -707,22 +707,28 @@ strip_padding(Data) ->
     Data.
 
 %% @private
-uncompress_literals(Chunks) ->
+maybe_uncompress_literals(Chunks) ->
     case proplists:get_value("LitT", Chunks) of
         undefined ->
             {Chunks, undefined};
-        <<_Header:4/binary, Data/binary>> ->
-            UncompressedData = zlib:uncompress(Data),
-            {
-                lists:keyreplace(
-                    "LitT",
-                    1,
-                    Chunks,
-                    {"LitU", UncompressedData}
-                ),
-                UncompressedData
-            }
+        <<0:32, Data/binary>> ->
+            {Chunks, Data};
+        <<_Size:4/binary, Data/binary>> ->
+            do_uncompress_literals(Chunks, Data)
     end.
+
+%% @private
+do_uncompress_literals(Chunks, Data) ->
+    UncompressedData = zlib:uncompress(Data),
+    {
+        lists:keyreplace(
+            "LitT",
+            1,
+            Chunks,
+            {"LitU", UncompressedData}
+        ),
+        UncompressedData
+    }.
 
 %% @private
 write_packbeam(OutputFilePath, ParsedFiles) ->
