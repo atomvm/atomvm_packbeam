@@ -14,6 +14,7 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%
+%% SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
 
 %%-----------------------------------------------------------------------------
 %% @doc A library used to generate an
@@ -29,6 +30,7 @@
 %% AVM Entry functions
 -export([is_beam/1, is_entrypoint/1, get_element_name/1, get_element_data/1, get_element_module/1]).
 
+% erlfmt:ignore We want to keep the block format
 -define(AVM_HEADER,
     16#23, 16#21, 16#2f, 16#75,
     16#73, 16#72, 16#2f, 16#62,
@@ -37,6 +39,7 @@
     16#74, 16#6f, 16#6d, 16#56,
     16#4d, 16#0a, 16#00, 16#00
 ).
+
 -define(ALLOWED_CHUNKS, [
     "AtU8", "Code", "ExpT", "LocT", "ImpT", "LitU", "FunT", "StrT", "LitT"
 ]).
@@ -194,7 +197,9 @@ create(OutputPath, InputPaths, Prune, StartModule) ->
     ok | {error, Reason :: term()}.
 create(OutputPath, InputPaths, ApplicationModule, Prune, StartModule) ->
     io:format("WARNING: Deprecated function: ~p:create/5~n", [?MODULE]),
-    Options = #{prune => Prune, start_module => StartModule, application_module => ApplicationModule},
+    Options = #{
+        prune => Prune, start_module => StartModule, application_module => ApplicationModule
+    },
     create(OutputPath, InputPaths, maps:merge(?DEFAULT_OPTIONS, Options)).
 
 %%-----------------------------------------------------------------------------
@@ -406,24 +411,28 @@ find_application_start_modules(ParsedFiles, ApplicationSpecs, ApplicationModule)
         false ->
             [];
         {value, {application, _ApplicationModule, Properties}} ->
-            ChildApplicationStartModules = case proplists:get_value(applications, Properties) of
-                Applications when is_list(Applications) ->
-                    lists:foldl(
-                        fun(Application, InnerAccum) ->
-                            find_application_start_modules(ParsedFiles, ApplicationSpecs, Application) ++ InnerAccum
-                        end,
-                        [],
-                        Applications
-                    );
-                _ ->
-                    []
-            end,
-            StartModules = case proplists:get_value(mod, Properties) of
-                {StartModule, _Args} when is_atom(StartModule) ->
-                    [StartModule];
-                _ ->
-                    []
-            end,
+            ChildApplicationStartModules =
+                case proplists:get_value(applications, Properties) of
+                    Applications when is_list(Applications) ->
+                        lists:foldl(
+                            fun(Application, InnerAccum) ->
+                                find_application_start_modules(
+                                    ParsedFiles, ApplicationSpecs, Application
+                                ) ++ InnerAccum
+                            end,
+                            [],
+                            Applications
+                        );
+                    _ ->
+                        []
+                end,
+            StartModules =
+                case proplists:get_value(mod, Properties) of
+                    {StartModule, _Args} when is_atom(StartModule) ->
+                        [StartModule];
+                    _ ->
+                        []
+                end,
             ChildApplicationStartModules ++ StartModules
     end.
 
@@ -435,7 +444,8 @@ find_dependencies(Entrypoints, BeamFiles) ->
                     get_parsed_file(Entrypoint, BeamFiles),
                     BeamFiles,
                     [Entrypoint]
-                ) || Entrypoint <- Entrypoints
+                )
+             || Entrypoint <- Entrypoints
             ]
         )
     ).
@@ -506,7 +516,8 @@ get_imports(ParsedFile) ->
 %% @private
 get_atoms(ParsedFile) ->
     AtomsT = [
-        Atom || {_Index, Atom} <- proplists:get_value(atoms, proplists:get_value(chunk_refs, ParsedFile))
+        Atom
+     || {_Index, Atom} <- proplists:get_value(atoms, proplists:get_value(chunk_refs, ParsedFile))
     ],
     AtomsFromLiterals = get_atom_literals(proplists:get_value(uncompressed_literals, ParsedFile)),
     lists:usort(AtomsT ++ AtomsFromLiterals).
@@ -530,12 +541,12 @@ get_atom_literals(I, Data, Accum) ->
 
 %% @private
 extract_atoms(Term, Accum) when is_atom(Term) ->
-    [Term|Accum];
+    [Term | Accum];
 extract_atoms(Term, Accum) when is_tuple(Term) ->
     extract_atoms(tuple_to_list(Term), Accum);
 extract_atoms(Term, Accum) when is_map(Term) ->
     extract_atoms(maps:to_list(Term), Accum);
-extract_atoms([H|T], Accum) ->
+extract_atoms([H | T], Accum) ->
     HeadAtoms = extract_atoms(H, []),
     extract_atoms(T, HeadAtoms ++ Accum);
 extract_atoms(_Term, Accum) ->
@@ -820,7 +831,7 @@ write_files(ParsedFiles, OutputDir) ->
                     end
                 end,
                 ParsedFiles
-             );
+            );
         _ ->
             throw(enoent)
     end.

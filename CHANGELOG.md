@@ -1,3 +1,8 @@
+<!--
+ Copyright 2022 Fred Dushin <fred@dushin.net>
+
+ SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
+-->
 # Changelog
 All notable changes to this project will be documented in this file.
 
@@ -6,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.7.4] - Unreleased
 - Add support for OTP-28
+- Added missing licences files, and CI workflow to ensure reuse compliance
 
 ## [0.7.3] (2024.06.06)
 
