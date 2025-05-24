@@ -120,7 +120,7 @@ To create an AVM file from a list of beam files, use the `create` sub-command to
 
 This command will create an AtomVM AVM file suitable for use with AtomVM.
 
-The input files specified in the create subcommand may be among the following types:
+The input files specified in the create sub-command may be among the following types:
 
 * compiled BEAM files (typically ending in `.beam`)
 * Previously created AVM files
@@ -233,7 +233,7 @@ To create a PackBEAM file, use the `packbeam_api:create/2` function.  Specify th
 
 Alternatively, you may specify a set of options with the `packbeam_api:create/3` function, which takes a map as the third parameter.
 
-| Key | Type | Deafult | Description |
+| Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `prune` | `boolean()` | `false` | Specify whether to prune the output AVM file.  Pruned AVM files can take considerably less space and hence may lead to faster development times. |
 | `start` | `module()` | n/a | Specify the start module, if it can't be determined automatically from the application. |
