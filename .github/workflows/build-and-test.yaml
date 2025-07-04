@@ -14,6 +14,15 @@ jobs:
     strategy:
       matrix:
         otp: ["25", "26", "27", "28"]
+        include:
+          - otp: "25"
+            make_jobs: "compile escript etest rel"
+          - otp: "26"
+            make_jobs: "all"
+          - otp: "27"
+            make_jobs: "all"
+          - otp: "28"
+            make_jobs: "all"
     permissions:
       contents: read
 
@@ -49,4 +58,4 @@ jobs:
 
     # Build
     - name: "Make"
-      run: PATH="/tmp/rebar3:${PATH}" make
+      run: PATH="/tmp/rebar3:${PATH}" make ${{ matrix.make_jobs }}
