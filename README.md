@@ -17,7 +17,7 @@ The `packbeam` tool may be used on its own as a stand-alone command-line utility
 
 ## Prerequisites
 
-Building `packbeam` requires a version of Erlang/OTP compatible with [AtomVM](https://github.com/atomvm/AtomVM), as well as a local installation of [`rebar3`](https://rebar3.org).  Optionally, any recent version of `make` may be used to simplify builds.  Consult the [AtomVM Documentation](https://www.atomvm.net/doc/master/) for information about supported OTP versions.
+Building `packbeam` requires a version of Erlang/OTP compatible with [AtomVM](https://github.com/atomvm/AtomVM), as well as a local installation of [`rebar3`](https://rebar3.org).  Optionally, any recent version of `make` may be used to simplify builds.  Consult the [AtomVM Documentation](https://doc.atomvm.org/latest/) for information about supported OTP versions.
 
 ## Build
 
@@ -219,7 +219,7 @@ In addition to being an `escript` command-line utility, this project provides an
 
 To create a PackBEAM file, use the `packbeam_api:create/2` function.  Specify the output path of the AVM you would like to create, followed by a list of paths to the files that will go into the AVM file.  Typically, these paths are a list of BEAM files, though you can also include plain data files, in addition to previously created AVM files.  Previously-created AVM files will be copied into the output AVM file.
 
-> Note.  Specify the file system paths to all files.  BEAM file path information will be stripped from the AVM element path data.  Any plain data files (non-BEAM files) will retain their path information.  See the [AtomVM Documentation](https://www.atomvm.net/doc/master/) about how to create plain data files in AVM files that users can retrieved via the `atomvm:read_priv/2` function.
+> Note.  Specify the file system paths to all files.  BEAM file path information will be stripped from the AVM element path data.  Any plain data files (non-BEAM files) will retain their path information.  See the [AtomVM Documentation](https://doc.atomvm.org/latest/) about how to create plain data files in AVM files that users can retrieved via the `atomvm:read_priv/2` function.
 
     %% erlang
     ok = packbeam_api:create(
