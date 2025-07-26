@@ -23,7 +23,7 @@ Building `packbeam` requires a version of Erlang/OTP compatible with [AtomVM](ht
 
 To build a release, run the following commands:
 
-    shell$ rebar3 release
+    shell$ rebar3 as prod release
     shell$ rebar3 as prod tar
 
 These commands will create an Erlang tar archive containing a versioned release of the `atomvm_packbeam` tool, e.g.,
@@ -37,8 +37,8 @@ in your local working directory.
 
 You can use the `install.sh` script to install the `atomvm_packbeam` utility into a location on your local machine.  You will need to specify the prefix location into which you want to install the utility, together with it's current version.
 
-    shell$ ./install.sh /opt/atomvm_packbeam 0.6.2
-    atomvm_packbeam version 0.6.2 installed in /opt/atomvm_packbeam.
+    shell$ ./install.sh /opt/atomvm_packbeam 0.7.4
+    atomvm_packbeam version 0.7.4 installed in /opt/atomvm_packbeam.
 
 > Note.  Some prefix locations may require `root` permissions to write files to.
 
