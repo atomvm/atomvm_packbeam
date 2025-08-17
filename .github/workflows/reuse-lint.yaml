@@ -13,7 +13,10 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: REUSE Compliance Check
       uses: fsfe/reuse-action@bb774aa972c2a89ff34781233d275075cbddf542
