@@ -15,6 +15,11 @@ This tool roughly approximates the functionality of the AtomVM `PackBEAM` utilit
 
 The `packbeam` tool may be used on its own as a stand-alone command-line utility.  More typically, it is used internally as part of the [`atomvm_rebar3_plugin`](https://github.com/atomvm/atomvm_rebar3_plugin) [`rebar3`](https://rebar3.org) plugin.
 
+[Releases](https://hex.pm/packages/atomvm_packbeam) and
+[accompanying documentation](https://hexdocs.pm/atomvm_packbeam/readme.html) are available on
+[hex.pm](https://hex.pm). The documentation for the current master branch is always available from
+the [`atomvm_packbeam` GitHub pages](https://atomvm.github.io/atomvm_packbeam/readme.html).
+
 ## Prerequisites
 
 Building `packbeam` requires a version of Erlang/OTP compatible with [AtomVM](https://github.com/atomvm/AtomVM), as well as a local installation of [`rebar3`](https://rebar3.org).  Optionally, any recent version of `make` may be used to simplify builds.  Consult the [AtomVM Documentation](https://doc.atomvm.org/latest/) for information about supported OTP versions.
@@ -29,7 +34,7 @@ To build a release, run the following commands:
 These commands will create an Erlang tar archive containing a versioned release of the `atomvm_packbeam` tool, e.g.,
 
     ...
-    ===> Tarball successfully created: _build/prod/rel/atomvm_packbeam/atomvm_packbeam-0.6.2.tar.gz
+    ===> Tarball successfully created: _build/prod/rel/atomvm_packbeam/atomvm_packbeam-0.7.5.tar.gz
 
 in your local working directory.
 
@@ -37,8 +42,8 @@ in your local working directory.
 
 You can use the `install.sh` script to install the `atomvm_packbeam` utility into a location on your local machine.  You will need to specify the prefix location into which you want to install the utility, together with it's current version.
 
-    shell$ ./install.sh /opt/atomvm_packbeam 0.7.4
-    atomvm_packbeam version 0.7.4 installed in /opt/atomvm_packbeam.
+    shell$ ./install.sh /opt/atomvm_packbeam 0.7.5
+    atomvm_packbeam version 0.7.5 installed in /opt/atomvm_packbeam.
 
 > Note.  Some prefix locations may require `root` permissions to write files to.
 
@@ -64,7 +69,7 @@ On-line help is available via the `help` sub-command:
 
     shell$ packbeam help
 
-    packbeam version 0.7.4
+    packbeam version 0.7.5
 
     Syntax:
         packbeam <sub-command> <options> <args>
