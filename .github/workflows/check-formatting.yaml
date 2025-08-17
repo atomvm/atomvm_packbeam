@@ -23,7 +23,11 @@ jobs:
   format-check:
     runs-on: ubuntu-24.04
     container: erlang:28
+    permissions:
+      contents: read
+
     steps:
+
     - name: "Install deps"
       run: |
         apt install -y git
@@ -35,7 +39,8 @@ jobs:
         cd erlfmt
         rebar3 as release escriptize
 
-    - uses: actions/checkout@v4
+    - name: "Checkout code"
+      uses: actions/checkout@v5
 
     - name: "Check formatting with erlfmt"
       run: |
