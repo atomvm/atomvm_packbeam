@@ -41,7 +41,7 @@
 ).
 
 -define(ALLOWED_CHUNKS, [
-    "AtU8", "Code", "ExpT", "LocT", "ImpT", "LitU", "FunT", "StrT", "LitT"
+    "AtU8", "Code", "ExpT", "LocT", "ImpT", "LitU", "FunT", "StrT", "LitT", "avmN"
 ]).
 -define(BEAM_START_FLAG, 1).
 -define(BEAM_CODE_FLAG, 2).
