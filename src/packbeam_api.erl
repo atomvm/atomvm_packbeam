@@ -54,7 +54,8 @@
     prune => boolean(),
     start_module => module() | undefined,
     application_module => module() | undefined,
-    include_lines => boolean()
+    include_lines => boolean(),
+    arch => atom()
 }.
 
 -export_type([
@@ -68,7 +69,9 @@
     prune => false,
     start_module => undefined,
     application_module => undefined,
-    include_lines => true
+    include_lines => true,
+    arch => undefined,
+    platform => generic_unix
 }).
 
 %%
@@ -88,7 +91,9 @@
 %%              prune => false,
 %%              start_module => undefined,
 %%              application_module => undefined,
-%%              include_lines => false
+%%              include_lines => false,
+%%              arch => undefined,
+%%              platform => generic_unix
 %%          }'
 %%
 %% @end
@@ -122,15 +127,21 @@ create(OutputPath, InputPaths, Options) ->
         prune := Prune,
         start_module := StartModule,
         application_module := ApplicationModule,
-        include_lines := IncludeLines
+        include_lines := IncludeLines,
+        arch := Arch,
+        platform := Platform
     } = maps:merge(?DEFAULT_OPTIONS, Options),
-    ParsedFiles = parse_files(InputPaths, StartModule, IncludeLines),
+    Files0 = parse_files(InputPaths, StartModule, IncludeLines),
+    Files1 = filter_arch_modules(Files0, Arch),
+    Files2 = filter_platform_modules(Files1, Platform),
+    Files3 =
+        if
+            Prune -> prune(Files2, ApplicationModule);
+            true -> Files2
+        end,
     write_packbeam(
         OutputPath,
-        case Prune of
-            true -> prune(ParsedFiles, ApplicationModule);
-            _ -> ParsedFiles
-        end
+        Files3
     ).
 
 %%-----------------------------------------------------------------------------
@@ -782,9 +793,14 @@ ends_with(String, Suffix) ->
 
 %% @private
 filter_chunks(Chunks, IncludeLines) ->
-    AllowedChunks = allowed_chunks(IncludeLines),
+    AllowedChunks0 = allowed_chunks(IncludeLines),
+    AllowedChunks1 =
+        case lists:keymember("avmN", 1, Chunks) of
+            true -> AllowedChunks0 -- ["Code", "Type"];
+            false -> AllowedChunks0 -- ["avmN"]
+        end,
     lists:filter(
-        fun({Tag, _Data}) -> lists:member(Tag, AllowedChunks) end,
+        fun({Tag, _Data}) -> lists:member(Tag, AllowedChunks1) end,
         Chunks
     ).
 
@@ -853,3 +869,90 @@ deduplicate([]) ->
     [];
 deduplicate([H | T]) ->
     [H | [X || X <- deduplicate(T), X /= H]].
+
+% Some modules may be for several platforms, so keep list of modules we can
+% filter out.
+-define(PLATFORM_MODULES_FILTER, #{
+    generic_unix => [
+        "pico.beam",
+        "i2c.beam",
+        "gpio.beam",
+        "esp_adc.beam",
+        "esp.beam",
+        "emscripten.beam",
+        "jit_stream_flash.beam"
+    ],
+    esp32 => [
+        "pico.beam",
+        "emscripten.beam",
+        "jit_stream_mmap.beam"
+    ],
+    stm32 => [
+        "pico.beam",
+        "esp_adc.beam",
+        "esp.beam",
+        "emscripten.beam",
+        "jit_stream_mmap.beam"
+    ],
+    rp2 => [
+        "esp_adc.beam",
+        "esp.beam",
+        "emscripten.beam",
+        "jit_stream_mmap.beam"
+    ],
+    emscripten => [
+        "pico.beam",
+        "i2c.beam",
+        "gpio.beam",
+        "esp_adc.beam",
+        "esp.beam",
+        "emscripten.beam",
+        "jit_stream_flash.beam",
+        "jit_stream_mmap.beam"
+    ]
+}).
+
+filter_platform_modules(Files, Platform) when is_map_key(Platform, ?PLATFORM_MODULES_FILTER) ->
+    lists:subtract(Files, map_get(Platform, ?PLATFORM_MODULES_FILTER));
+filter_platform_modules(Files, _) ->
+    Files.
+
+-define(ARCH_MODULES_FILTER, #{
+    aarch64 => [
+        "jit_armv6m.beam",
+        "jit_armv6m_asm.beam",
+        "jit_riscv32.beam",
+        "jit_riscv32_asm.beam",
+        "jit_x86_64.beam",
+        "jit_x86_64_asm.beam"
+    ],
+    armv6m => [
+        "jit_aarch64.beam",
+        "jit_aarch64_asm.beam",
+        "jit_riscv32.beam",
+        "jit_riscv32_asm.beam",
+        "jit_x86_64.beam",
+        "jit_x86_64_asm.beam"
+    ],
+    riscv32 => [
+        "jit_aarch64.beam",
+        "jit_aarch64_asm.beam",
+        "jit_armv6m.beam",
+        "jit_armv6m_asm.beam",
+        "jit_x86_64.beam",
+        "jit_x86_64_asm.beam"
+    ],
+    x86_64 => [
+        "jit_aarch64.beam",
+        "jit_aarch64_asm.beam",
+        "jit_armv6m.beam",
+        "jit_armv6m_asm.beam",
+        "jit_riscv32.beam",
+        "jit_riscv32_asm.beam"
+    ]
+}).
+
+filter_arch_modules(Files, Platform) when is_map_key(Platform, ?ARCH_MODULES_FILTER) ->
+    lists:subtract(Files, map_get(Platform, ?ARCH_MODULES_FILTER));
+filter_arch_modules(Files, _) ->
+    Files.

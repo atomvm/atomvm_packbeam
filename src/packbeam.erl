@@ -131,6 +131,10 @@ print_help() ->
         "              [--prune|-p]           Prune dependencies~n"
         "              [--start|-s <module>]  Start module~n"
         "              [--remove_lines|-r]    Remove line number information from AVM files~n"
+        "              [--arch <arch>]        Filter out modules not for architecture~n"
+        "                                     (aarch64, armv6m, riscv32, x86_64)~n"
+        "              [--platform <plt>]     Filter out modules not for platform~n"
+        "                                     (generic_unix, rp2, esp32, stm32, emscripten)"
         "~n"
         "    list <options> <avm-file>~n"
         "        where:~n"
@@ -187,7 +191,8 @@ do_create(Opts, Args) ->
         #{
             prune => maps:get(prune, Opts, false),
             start_module => maps:get(start_module, Opts, undefined),
-            include_lines => not maps:get(remove_lines, Opts, false)
+            include_lines => not maps:get(remove_lines, Opts, false),
+            arch => maps:get(arch, Opts, undefined)
         }
     ),
     0.
@@ -346,5 +351,9 @@ parse_args(["-f", Format | T], {Opts, Args}) ->
     parse_args(["--format", Format | T], {Opts, Args});
 parse_args(["--format", Format | T], {Opts, Args}) ->
     parse_args(T, {Opts#{format => Format}, Args});
+parse_args(["--arch", Arch | T], {Opts, Args}) ->
+    parse_args(T, {Opts#{arch => list_to_atom(Arch)}, Args});
+parse_args(["--platform", Platform | T], {Opts, Args}) ->
+    parse_args(T, {Opts#{platform => list_to_atom(Platform)}, Args});
 parse_args([H | T], {Opts, Args}) ->
     parse_args(T, {Opts, [H | Args]}).
