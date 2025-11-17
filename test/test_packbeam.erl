@@ -112,6 +112,40 @@ packbeam_create_start_test() ->
 
     ok.
 
+packbeam_create_start_main_test() ->
+    AVMFile = dest_dir("packbeam_create_start_main_test.avm"),
+    ?assertMatch(
+        ok,
+        packbeam_api:create(
+            AVMFile,
+            [
+                test_beam_path("c.beam"),
+                test_beam_path("f.beam"),
+                test_beam_path("g.beam")
+            ],
+            false,
+            g
+        )
+    ),
+
+    ParsedFiles = packbeam_api:list(AVMFile),
+
+    ?assert(is_list(ParsedFiles)),
+    ?assertEqual(length(ParsedFiles), 3),
+
+    [GFile | _] = ParsedFiles,
+
+    % io:format(user, "~p~n", [ParsedFiles]),
+
+    ?assertMatch(g, get_module(GFile)),
+    ?assertMatch("g.beam", get_module_name(GFile)),
+    ?assert(is_beam(GFile)),
+    ?assert(is_start(GFile)),
+    ?assert(lists:member({main, 1}, get_exports(GFile))),
+    ?assert(not lists:member({start, 0}, get_exports(GFile))),
+
+    ok.
+
 packbeam_create_prune_test() ->
     AVMFile = dest_dir("packbeam_create_prune_test.avm"),
     ?assertMatch(

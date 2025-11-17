@@ -216,7 +216,7 @@ create(OutputPath, InputPaths, ApplicationModule, Prune, StartModule) ->
 list(InputPath) ->
     case file_type(InputPath) of
         avm ->
-            parse_file(InputPath, false);
+            parse_file(InputPath, undefined, false);
         _ ->
             throw(io_lib:format("Expected AVM file: ~p", [InputPath]))
     end.
@@ -244,7 +244,7 @@ list(InputPath) ->
 extract(InputPath, AVMElementNames, OutputDir) ->
     case file_type(InputPath) of
         avm ->
-            ParsedFiles = parse_file(InputPath, false),
+            ParsedFiles = parse_file(InputPath, undefined, false),
             write_files(filter_names(AVMElementNames, ParsedFiles), OutputDir);
         _ ->
             throw(io_lib:format("Expected AVM file: ~p", [InputPath]))
@@ -271,7 +271,7 @@ extract(InputPath, AVMElementNames, OutputDir) ->
 delete(OutputPath, InputPath, AVMElementNames) ->
     case file_type(InputPath) of
         avm ->
-            ParsedFiles = parse_file(InputPath, false),
+            ParsedFiles = parse_file(InputPath, undefined, false),
             write_packbeam(OutputPath, remove_names(AVMElementNames, ParsedFiles));
         _ ->
             throw(io_lib:format("Expected AVM file: ~p", [InputPath]))
@@ -341,7 +341,7 @@ get_flags(AVMElement) ->
 parse_files(InputPaths, StartModule, IncludeLines) ->
     Files = lists:foldl(
         fun(InputPath, Accum) ->
-            Accum ++ parse_file(InputPath, IncludeLines)
+            Accum ++ parse_file(InputPath, StartModule, IncludeLines)
         end,
         [],
         InputPaths
@@ -354,10 +354,10 @@ parse_files(InputPaths, StartModule, IncludeLines) ->
     end.
 
 %% @private
-parse_file({InputPath, ModuleName}, IncludeLines) ->
-    parse_file(file_type(InputPath), ModuleName, load_file(InputPath), IncludeLines);
-parse_file(InputPath, IncludeLines) ->
-    parse_file(file_type(InputPath), InputPath, load_file(InputPath), IncludeLines).
+parse_file({InputPath, ModuleName}, StartModule, IncludeLines) ->
+    parse_file(file_type(InputPath), ModuleName, StartModule, load_file(InputPath), IncludeLines);
+parse_file(InputPath, StartModule, IncludeLines) ->
+    parse_file(file_type(InputPath), InputPath, StartModule, load_file(InputPath), IncludeLines).
 
 %% @private
 file_type(InputPath) ->
@@ -595,7 +595,7 @@ filter_modules(Modules, ParsedFiles) ->
     ).
 
 %% @private
-parse_file(beam, _ModuleName, Data, IncludeLines) ->
+parse_file(beam, _ModuleName, StartModule, Data, IncludeLines) ->
     {ok, Module, Chunks} = beam_lib:all_chunks(Data),
     {UncompressedChunks, UncompressedLiterals} = maybe_uncompress_literals(Chunks),
     FilteredChunks = filter_chunks(UncompressedChunks, IncludeLines),
@@ -603,10 +603,17 @@ parse_file(beam, _ModuleName, Data, IncludeLines) ->
     {ok, {Module, ChunkRefs}} = beam_lib:chunks(Data, [imports, exports, atoms]),
     Exports = proplists:get_value(exports, ChunkRefs),
     Flags =
-        case lists:member({start, 0}, Exports) of
-            true ->
+        if
+            StartModule =:= Module ->
                 ?BEAM_CODE_FLAG bor ?BEAM_START_FLAG;
-            _ ->
+            StartModule =:= undefined ->
+                case lists:member({start, 0}, Exports) of
+                    true ->
+                        ?BEAM_CODE_FLAG bor ?BEAM_START_FLAG;
+                    _ ->
+                        ?BEAM_CODE_FLAG
+                end;
+            true ->
                 ?BEAM_CODE_FLAG
         end,
     [
@@ -619,14 +626,14 @@ parse_file(beam, _ModuleName, Data, IncludeLines) ->
             {uncompressed_literals, UncompressedLiterals}
         ]
     ];
-parse_file(avm, ModuleName, Data, _IncludeLines) ->
+parse_file(avm, ModuleName, _StartModule, Data, _IncludeLines) ->
     case Data of
         <<?AVM_HEADER, AVMData/binary>> ->
             parse_avm_data(AVMData);
         _ ->
             throw(io_lib:format("Invalid AVM header: ~p", [ModuleName]))
     end;
-parse_file(normal, ModuleName, Data, _IncludeLines) ->
+parse_file(normal, ModuleName, _StartModule, Data, _IncludeLines) ->
     DataSize = byte_size(Data),
     Blob = <<DataSize:32, Data/binary>>,
     [[{element_name, ModuleName}, {flags, ?NORMAL_FILE_FLAG}, {data, Blob}]].
