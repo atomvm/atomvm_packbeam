@@ -146,6 +146,96 @@ packbeam_create_start_main_test() ->
 
     ok.
 
+packbeam_create_lib_test() ->
+    AVMFile = dest_dir("packbeam_create_lib_test.avm"),
+    ?assertMatch(
+        ok,
+        packbeam_api:create(
+            AVMFile,
+            [
+                test_beam_path("c.beam"),
+                test_beam_path("f.beam"),
+                test_beam_path("g.beam")
+            ],
+            #{
+                lib => true
+            }
+        )
+    ),
+
+    ParsedFiles = packbeam_api:list(AVMFile),
+
+    ?assert(is_list(ParsedFiles)),
+    ?assertEqual(length(ParsedFiles), 3),
+
+    [CFile, FFile, GFile] = ParsedFiles,
+
+    % io:format(user, "~p~n", [ParsedFiles]),
+
+    ?assertMatch(g, get_module(GFile)),
+    ?assertMatch("g.beam", get_module_name(GFile)),
+    ?assert(is_beam(GFile)),
+    ?assertNot(is_start(CFile)),
+    ?assertNot(is_start(FFile)),
+    ?assertNot(is_start(GFile)),
+    ?assert(lists:member({main, 1}, get_exports(GFile))),
+    ?assertNot(lists:member({start, 0}, get_exports(GFile))),
+
+    ok.
+
+packbeam_create_lib_from_avm_test() ->
+    AVMFile0 = dest_dir("packbeam_create_start_main_test.avm"),
+    ?assertMatch(
+        ok,
+        packbeam_api:create(
+            AVMFile0,
+            [
+                test_beam_path("c.beam"),
+                test_beam_path("f.beam"),
+                test_beam_path("g.beam")
+            ],
+            false,
+            g
+        )
+    ),
+
+    AVMFile = dest_dir("packbeam_create_lib_test.avm"),
+    ?assertMatch(
+        ok,
+        packbeam_api:create(
+            AVMFile,
+            [
+                test_beam_path("a.beam"),
+                AVMFile0
+            ],
+            #{
+                lib => true
+            }
+        )
+    ),
+
+    ParsedFiles = packbeam_api:list(AVMFile),
+
+    ?assert(is_list(ParsedFiles)),
+    ?assertEqual(length(ParsedFiles), 4),
+
+    % g was written first in AVMFile0
+    [AFile, GFile, CFile, FFile] = ParsedFiles,
+
+    % io:format(user, "~p~n", [ParsedFiles]),
+
+    ?assertMatch(g, get_module(GFile)),
+    ?assertMatch("g.beam", get_module_name(GFile)),
+    ?assert(is_beam(GFile)),
+    ?assertNot(is_start(AFile)),
+    ?assertNot(is_start(GFile)),
+    ?assertNot(is_start(CFile)),
+    ?assertNot(is_start(FFile)),
+    ?assert(lists:member({main, 1}, get_exports(GFile))),
+    ?assertNot(lists:member({start, 0}, get_exports(GFile))),
+
+    ok.
+
 packbeam_create_prune_test() ->
     AVMFile = dest_dir("packbeam_create_prune_test.avm"),
     ?assertMatch(

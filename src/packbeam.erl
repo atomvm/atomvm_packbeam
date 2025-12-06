@@ -129,6 +129,7 @@ print_help() ->
         "           [<input-file>]+ is a list of one or more input files,~n"
         "           and <options> are among the following:~n"
         "              [--prune|-p]           Prune dependencies~n"
+        "              [--lib|-l]             Create a library avm, with no start module~n"
         "              [--start|-s <module>]  Start module~n"
         "              [--remove_lines|-r]    Remove line number information from AVM files~n"
         "~n"
@@ -328,6 +329,10 @@ parse_args(["-p" | T], {Opts, Args}) ->
     parse_args(["--prune" | T], {Opts, Args});
 parse_args(["--prune" | T], {Opts, Args}) ->
     parse_args(T, {Opts#{prune => true}, Args});
+parse_args(["-l" | T], {Opts, Args}) ->
+    parse_args(["--lib" | T], {Opts, Args});
+parse_args(["--lib" | T], {Opts, Args}) ->
+    parse_args(T, {Opts#{lib => true}, Args});
 parse_args(["-start", Module | T], {Opts, Args}) ->
     io:format("WARNING.  Deprecated option.  Use --start instead.~n"),
     parse_args(["--start", Module | T], {Opts, Args});

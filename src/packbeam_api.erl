@@ -66,6 +66,7 @@
 
 -define(DEFAULT_OPTIONS, #{
     prune => false,
+    lib => false,
     start_module => undefined,
     application_module => undefined,
     include_lines => true
@@ -86,6 +87,7 @@
 %%
 %%          where `DefaultOptions' is `#{
 %%              prune => false,
+%%              lib => false,
 %%              start_module => undefined,
 %%              application_module => undefined,
 %%              include_lines => false
@@ -120,11 +122,12 @@ create(OutputPath, InputPaths) ->
 create(OutputPath, InputPaths, Options) ->
     #{
         prune := Prune,
+        lib := Lib,
         start_module := StartModule,
         application_module := ApplicationModule,
         include_lines := IncludeLines
     } = maps:merge(?DEFAULT_OPTIONS, Options),
-    ParsedFiles = parse_files(InputPaths, StartModule, IncludeLines),
+    ParsedFiles = parse_files(InputPaths, Lib, StartModule, IncludeLines),
     write_packbeam(
         OutputPath,
         case Prune of
@@ -216,7 +219,7 @@ create(OutputPath, InputPaths, ApplicationModule, Prune, StartModule) ->
 list(InputPath) ->
     case file_type(InputPath) of
         avm ->
-            parse_file(InputPath, undefined, false);
+            parse_file(InputPath, false, undefined, false);
         _ ->
             throw(io_lib:format("Expected AVM file: ~p", [InputPath]))
     end.
@@ -244,7 +247,7 @@ list(InputPath) ->
 extract(InputPath, AVMElementNames, OutputDir) ->
     case file_type(InputPath) of
         avm ->
-            ParsedFiles = parse_file(InputPath, undefined, false),
+            ParsedFiles = parse_file(InputPath, false, undefined, false),
             write_files(filter_names(AVMElementNames, ParsedFiles), OutputDir);
         _ ->
             throw(io_lib:format("Expected AVM file: ~p", [InputPath]))
@@ -271,7 +274,7 @@ extract(InputPath, AVMElementNames, OutputDir) ->
 delete(OutputPath, InputPath, AVMElementNames) ->
     case file_type(InputPath) of
         avm ->
-            ParsedFiles = parse_file(InputPath, undefined, false),
+            ParsedFiles = parse_file(InputPath, false, undefined, false),
             write_packbeam(OutputPath, remove_names(AVMElementNames, ParsedFiles));
         _ ->
             throw(io_lib:format("Expected AVM file: ~p", [InputPath]))
@@ -338,10 +341,10 @@ get_flags(AVMElement) ->
     proplists:get_value(flags, AVMElement).
 
 %% @private
-parse_files(InputPaths, StartModule, IncludeLines) ->
+parse_files(InputPaths, Lib, StartModule, IncludeLines) ->
     Files = lists:foldl(
         fun(InputPath, Accum) ->
-            Accum ++ parse_file(InputPath, StartModule, IncludeLines)
+            Accum ++ parse_file(InputPath, Lib, StartModule, IncludeLines)
         end,
         [],
         InputPaths
@@ -354,10 +357,14 @@ parse_files(InputPaths, StartModule, IncludeLines) ->
     end.
 
 %% @private
-parse_file({InputPath, ModuleName}, StartModule, IncludeLines) ->
-    parse_file(file_type(InputPath), ModuleName, StartModule, load_file(InputPath), IncludeLines);
-parse_file(InputPath, StartModule, IncludeLines) ->
-    parse_file(file_type(InputPath), InputPath, StartModule, load_file(InputPath), IncludeLines).
+parse_file({InputPath, ModuleName}, Lib, StartModule, IncludeLines) ->
+    parse_file(
+        file_type(InputPath), ModuleName, Lib, StartModule, load_file(InputPath), IncludeLines
+    );
+parse_file(InputPath, Lib, StartModule, IncludeLines) ->
+    parse_file(
+        file_type(InputPath), InputPath, Lib, StartModule, load_file(InputPath), IncludeLines
+    ).
 
 %% @private
 file_type(InputPath) ->
@@ -595,7 +602,7 @@ filter_modules(Modules, ParsedFiles) ->
     ).
 
 %% @private
-parse_file(beam, _ModuleName, StartModule, Data, IncludeLines) ->
+parse_file(beam, _ModuleName, Lib, StartModule, Data, IncludeLines) ->
     {ok, Module, Chunks} = beam_lib:all_chunks(Data),
     {UncompressedChunks, UncompressedLiterals} = maybe_uncompress_literals(Chunks),
     FilteredChunks = filter_chunks(UncompressedChunks, IncludeLines),
@@ -606,7 +613,7 @@ parse_file(beam, _ModuleName, StartModule, Data, IncludeLines) ->
         if
             StartModule =:= Module ->
                 ?BEAM_CODE_FLAG bor ?BEAM_START_FLAG;
-            StartModule =:= undefined ->
+            StartModule =:= undefined andalso Lib =:= false ->
                 case lists:member({start, 0}, Exports) of
                     true ->
                         ?BEAM_CODE_FLAG bor ?BEAM_START_FLAG;
@@ -626,14 +633,14 @@ parse_file(beam, _ModuleName, StartModule, Data, IncludeLines) ->
             {uncompressed_literals, UncompressedLiterals}
         ]
     ];
-parse_file(avm, ModuleName, _StartModule, Data, _IncludeLines) ->
+parse_file(avm, ModuleName, Lib, StartModule, Data, _IncludeLines) ->
     case Data of
         <<?AVM_HEADER, AVMData/binary>> ->
-            parse_avm_data(AVMData);
+            parse_avm_data(Lib, StartModule, AVMData);
         _ ->
             throw(io_lib:format("Invalid AVM header: ~p", [ModuleName]))
     end;
-parse_file(normal, ModuleName, _StartModule, Data, _IncludeLines) ->
+parse_file(normal, ModuleName, _Lib, _StartModule, Data, _IncludeLines) ->
     DataSize = byte_size(Data),
     Blob = <<DataSize:32, Data/binary>>,
     [[{element_name, ModuleName}, {flags, ?NORMAL_FILE_FLAG}, {data, Blob}]].
@@ -664,21 +671,41 @@ reorder_start_module(StartModule, Files) ->
     end.
 
 %% @private
-parse_avm_data(AVMData) ->
-    parse_avm_data(AVMData, []).
+parse_avm_data(Lib, StartModule, AVMData) ->
+    parse_avm_data(Lib, StartModule, AVMData, []).
 
 %% @private
-parse_avm_data(<<"">>, Accum) ->
+parse_avm_data(_Lib, _StartModule, <<"">>, Accum) ->
     lists:reverse(Accum);
-parse_avm_data(<<0:32/integer, _AVMRest/binary>>, Accum) ->
+parse_avm_data(_Lib, _StartModule, <<0:32/integer, _AVMRest/binary>>, Accum) ->
     lists:reverse(Accum);
-parse_avm_data(<<Size:32/integer, AVMRest/binary>>, Accum) ->
+parse_avm_data(Lib, StartModule, <<Size:32/integer, AVMRest/binary>>, Accum) ->
     SizeWithoutSizeField = Size - 4,
     case SizeWithoutSizeField =< erlang:byte_size(AVMRest) of
         true ->
             <<AVMBeamData:SizeWithoutSizeField/binary, AVMNext/binary>> = AVMRest,
-            Beam = parse_beam(AVMBeamData, [], in_header, 0, []),
-            parse_avm_data(AVMNext, [Beam | Accum]);
+            Beam0 = parse_beam(AVMBeamData, [], in_header, 0, []),
+            {flags, BeamFlags0} = lists:keyfind(flags, 1, Beam0),
+            BeamModule =
+                case lists:keyfind(module, 1, Beam0) of
+                    false -> undefined;
+                    {module, BeamModule0} -> BeamModule0
+                end,
+            BeamFlags1 =
+                if
+                    Lib ->
+                        BeamFlags0 band (bnot ?BEAM_START_FLAG);
+                    BeamModule =:= undefined ->
+                        BeamFlags0;
+                    StartModule =:= BeamModule ->
+                        BeamFlags0 bor ?BEAM_START_FLAG;
+                    StartModule =/= undefined ->
+                        BeamFlags0 band (bnot ?BEAM_START_FLAG);
+                    true ->
+                        BeamFlags0
+                end,
+            Beam1 = lists:keystore(flags, 1, Beam0, {flags, BeamFlags1}),
+            parse_avm_data(Lib, StartModule, AVMNext, [Beam1 | Accum]);
         _ ->
             throw(
                 io_lib:format("Invalid AVM data size: ~p (AVMRest=~p)", [
