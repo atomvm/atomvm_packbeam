@@ -9,8 +9,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.7.6] - (unreleased)
+## [0.8.0] - (2025.12.07)
 - Add support to jit precompiled native code sections (`avmN`)
+- Add support for type (`Type`) code sections for native code optimizations
+- Start module is set from `--start`, if present, or determined by the module exporting `start/0`
+- Add `--lib` option for packing libraries without setting a start module
 
 ## [0.7.5] - (2025.08.18)
 
@@ -60,7 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Changed the `packbeam_api:create` function to take a single map for optional
-parameters, instead of coding paramters into function arguments.  Previous
+parameters, instead of coding parameters into function arguments.  Previous
 versions of the `packbeam_api:create` function that take optional parameters
 have been deprecated.
 

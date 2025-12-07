@@ -22,7 +22,7 @@
     [
         {description,
             "An escript and library to manipulate (create, list, delete) AtomVM PackBeam files"},
-        {vsn, "0.7.5"},
+        {vsn, "0.8.0"},
         {registered, []},
         {applications, [kernel, stdlib]},
         {env, []},

@@ -6,6 +6,12 @@
 
 # AtomVM Update Instructions
 
+## 0.7.* -> 0.8.*
+
+- No changes have been made to default behaviors that should affect any existing applications that
+depend on `atomvm_packbeam` or its escript usage. New options have been added, consult the
+documentation for details.
+
 ## 0.6.* -> 0.7.*
 
 - The default behavior of not generating line number information in BEAM files has changed.  By default, line number information will be generated in BEAM files.  You can remove line number information using from BEAM files by using the `-r` (or `--remove_lines`) flags to the `create` subcommand.  Note that in versions 0.6 of this tool, the `--include_lines` flag was ignored due to a bug in the code.
