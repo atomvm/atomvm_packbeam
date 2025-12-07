@@ -186,6 +186,7 @@ do_create(Opts, Args) ->
         OutputFile,
         InputFiles,
         #{
+            lib => maps:get(lib, Opts, false),
             prune => maps:get(prune, Opts, false),
             start_module => maps:get(start_module, Opts, undefined),
             include_lines => not maps:get(remove_lines, Opts, false)
