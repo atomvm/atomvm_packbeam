@@ -25,7 +25,7 @@ rel:
 	rebar3 as prod tar
 	rm -rf x
 	mkdir x
-	./install.sh x 0.7.5
+	./install.sh x 0.8.0
 	x/bin/packbeam version
 
 clean:

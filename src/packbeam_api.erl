@@ -148,7 +148,8 @@ create(OutputPath, InputPaths, Options) ->
 %%          will occur first in the generated AVM file.
 %% @returns ok if the file was created.
 %% @throws  Reason::string()
-%% @deprecated This function is deprecated.  Use `create/3' instead.
+%% @deprecated This function is deprecated, and will be removed in the 0.9.0 release.  Use
+%% `create/3' instead.
 %% @doc     Create an AVM file.
 %%
 %%          Equivalent to create(OutputPath, InputPaths, undefined, Prune, StartModule).
@@ -163,7 +164,9 @@ create(OutputPath, InputPaths, Options) ->
 ) ->
     ok | {error, Reason :: term()}.
 create(OutputPath, InputPaths, Prune, StartModule) ->
-    io:format("WARNING: Deprecated function: ~p:create/4~n", [?MODULE]),
+    io:format("WARNING: Deprecated function will be removed in the 0.9.0 release: ~p:create/4~n", [
+        ?MODULE
+    ]),
     Options = #{prune => Prune, start_module => StartModule},
     create(OutputPath, InputPaths, maps:merge(?DEFAULT_OPTIONS, Options)).
 
@@ -182,7 +185,8 @@ create(OutputPath, InputPaths, Prune, StartModule) ->
 %%          will occur first in the generated AVM file.
 %% @returns ok if the file was created.
 %% @throws  Reason::string()
-%% @deprecated This function is deprecated.  Use `create/3' instead.
+%% @deprecated This function is deprecated, and will be removed in the 0.9.0 release.  Use
+%% `create/3' instead.
 %% @doc     Create an AVM file.
 %%
 %%          This function will create an AVM file at the location specified in
@@ -199,7 +203,9 @@ create(OutputPath, InputPaths, Prune, StartModule) ->
 ) ->
     ok | {error, Reason :: term()}.
 create(OutputPath, InputPaths, ApplicationModule, Prune, StartModule) ->
-    io:format("WARNING: Deprecated function: ~p:create/5~n", [?MODULE]),
+    io:format("WARNING: Deprecated function will be removed in the 0.9.0 release: ~p:create/5~n", [
+        ?MODULE
+    ]),
     Options = #{
         prune => Prune, start_module => StartModule, application_module => ApplicationModule
     },
