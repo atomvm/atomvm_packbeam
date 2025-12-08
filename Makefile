@@ -16,6 +16,7 @@ doc:
 	rebar3 as doc ex_doc
 
 etest:
+	rebar3 as test escriptize
 	rebar3 as test eunit --cover
 	rebar3 as test proper --cover
 	rebar3 as test cover --verbose
