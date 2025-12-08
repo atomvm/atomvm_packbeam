@@ -16,7 +16,7 @@
 %%
 %% SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
 
--module(test_packbeam).
+-module(packbeam_api_tests).
 
 -include_lib("proper/include/proper.hrl").
 -include_lib("eunit/include/eunit.hrl").
