@@ -7,3 +7,4 @@ _build
 _checkouts
 rebar3.crashdump
 erl_crash.dump
+doc
