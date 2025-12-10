@@ -34,7 +34,7 @@ To build a release, run the following commands:
 These commands will create an Erlang tar archive containing a versioned release of the `atomvm_packbeam` tool, e.g.,
 
     ...
-    ===> Tarball successfully created: _build/prod/rel/atomvm_packbeam/atomvm_packbeam-0.8.0.tar.gz
+    ===> Tarball successfully created: _build/prod/rel/atomvm_packbeam/atomvm_packbeam-0.8.1.tar.gz
 
 in your local working directory.
 
@@ -42,8 +42,8 @@ in your local working directory.
 
 You can use the `install.sh` script to install the `atomvm_packbeam` utility into a location on your local machine.  You will need to specify the prefix location into which you want to install the utility, together with it's current version.
 
-    shell$ ./install.sh /opt/atomvm_packbeam 0.8.0
-    atomvm_packbeam version 0.8.0 installed in /opt/atomvm_packbeam.
+    shell$ ./install.sh /opt/atomvm_packbeam 0.8.1
+    atomvm_packbeam version 0.8.1 installed in /opt/atomvm_packbeam.
 
 > Note.  Some prefix locations may require `root` permissions to write files to.
 
@@ -69,7 +69,7 @@ On-line help is available via the `help` sub-command:
 
     shell$ packbeam help
 
-    packbeam version 0.8.0
+    packbeam version 0.8.1
 
     Syntax:
         packbeam <sub-command> <options> <args>
