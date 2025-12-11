@@ -1,5 +1,5 @@
 ##
-## Copyright (c) 2020 dushin.net
+## Copyright (c) 2019 dushin.net
 ## All rights reserved.
 ##
 ## SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
@@ -31,6 +31,7 @@ rel:
 
 clean:
 	rm -rf _build
+	rm -fr doc
 
 publish: doc
 	rebar3 as publish hex publish --doc-dir docs
