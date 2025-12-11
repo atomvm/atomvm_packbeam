@@ -82,6 +82,7 @@ On-line help is available via the `help` sub-command:
             [<input-file>]+ is a list of one or more input files,
             and <options> are among the following:
                 [--prune|-p]           Prune dependencies
+                [--lib|-l]             Create a library avm, with no start module
                 [--start|-s <module>]  Start module
                 [--remove_lines|-r]    Remove line number information from AVM files
 
@@ -135,11 +136,21 @@ Note that beam files specified are stripped of their path information, inside of
 
 #### Start Entrypoint
 
-If you are building an application that provides a start entrypoint (as opposed to a library, suitable for inclusion in another AVM file), then at least one beam module in an AVM file must contain a `start/0` entry-point, i.e., a function called `start` with arity 0.  AtomVM will use this entry-point as the first function to execute, when starting.
+If you are building an application that provides a start entrypoint (as opposed to a library,
+suitable for inclusion in another AVM file), then at least one beam module in an AVM file must
+contain a `start/0` (i.e., a function called `start` with arity 0) or `main/1` entry-point.  AtomVM
+will use this entry-point as the first function to execute, when starting.
 
-> Note.  It is conventional, but not required, that the first beam file in an AVM file contains the `start/0` entry-point.  AtomVM will use the first BEAM file that contains an exported `start/0` function as the entry-point for the application.
+When explicitly setting the `--start` module no other module will be tagged as an entrypoint, even
+if multiple modules export `start/0`.
 
-If your application has multiple modules with exported `start/0` functions, you may use the `--start <module>`  (alternatively, `-s <module>`) option to specify the module you would like placed first in your AVM file.  The `<module>` parameter should be the module name (without the `.beam` suffix, e.g., `main`).
+> Note.  It is conventional, but not required, that the first beam file in an AVM file contains the
+`start/0` entry-point.
+
+If your application has multiple modules with exported `start/0` functions, or you are creating an
+escript with a `main/1`, you may use the `--start <module>`  (alternatively, `-s <module>`) option
+to specify the entrypoint module.  The `<module>` parameter should be the module name (without the
+`.beam` suffix, e.g., `main`).
 
 A previously created AVM file file may be supplied as input (including the same file specified as output, for example).  The contents of any input AVM files will be included in the output AVM file.  For example, if you are building a library of BEAM files (for example, none of which contain a `start/0` entry-point), you may want to archive these into an AVM file, which can be used for downstream applications.
 
@@ -148,6 +159,12 @@ In addition, you may specify a "normal" (i.e., non-beam or non-AVM) file.  Norma
     shell$ packbeam create mylib.avm mylib.avm mylib/priv/sample.txt
 
 > Note.  It is conventional in AtomVM for normal files to have the path `<module-name>/priv/<file-name>`.
+
+#### Creating Libraries
+
+Libraries can be packed using the `--lib` (alternatively, `-l`) option. This will create a packed
+avm archive without auto selecting a start module, even if one or more of the included modules
+export `start/0`.
 
 #### Pruning
 
@@ -241,6 +258,7 @@ Alternatively, you may specify a set of options with the `packbeam_api:create/3`
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `prune` | `boolean()` | `false` | Specify whether to prune the output AVM file.  Pruned AVM files can take considerably less space and hence may lead to faster development times. |
+| `lib` | `boolean()` | `false` | Create a library (no entrypoint) |
 | `start` | `module()` | n/a | Specify the start module, if it can't be determined automatically from the application. |
 | `application` | `module()` | n/a | Specify the application module.  The `<application>.app` file will be encoded and included as an element in the AVM file with the path `<module>/priv/application.bin` |
 | `include_lines` | `boolean()` | `true` | Specify whether to include line number information in generated AVM files. |
