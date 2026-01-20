@@ -21,12 +21,20 @@ permissions:
   pages: write
   id-token: write
 
+env:
+  LANG: C.UTF-8
+
 jobs:
 
   build:
     runs-on: ubuntu-24.04
     container: erlang:28
     steps:
+
+    - name: "Set locale"
+      run: |
+          sudo locale-gen C.UTF-8
+          sudo update-locale LANG="C.UTF-8"
 
     - name: "Checkout code"
       uses: actions/checkout@v5
