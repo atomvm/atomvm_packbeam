@@ -28,13 +28,19 @@ jobs:
 
   build:
     runs-on: ubuntu-24.04
-    container: erlang:28
     steps:
 
     - name: "Set locale"
       run: |
           sudo locale-gen C.UTF-8
           sudo update-locale LANG="C.UTF-8"
+
+    - name: "Setup BEAM"
+      id: beam-setup
+      uses: erlef/setup-beam@v1.20.4
+      with:
+        otp-version: "28.3"
+        rebar3-version: "3.26.0"
 
     - name: "Checkout code"
       uses: actions/checkout@v5
@@ -51,7 +57,7 @@ jobs:
       uses: actions/upload-pages-artifact@v3
       with:
         name: github-pages
-        path: ./docs
+        path: ./doc
 
   deploy:
     # Add a dependency to the build job
