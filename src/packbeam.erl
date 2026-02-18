@@ -70,6 +70,7 @@ delete(OutputPath, InputPath, Names) ->
 %%
 
 %% @hidden
+-spec main([string()]) -> no_return().
 main(Argv) ->
     {Opts, Args} = parse_args(Argv),
     case length(Args) of

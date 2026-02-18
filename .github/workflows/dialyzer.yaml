@@ -1,0 +1,45 @@
+#
+#  Copyright 2025 Peter M <petermm@gmail.com>
+#
+#  SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
+#
+# This is a workflow for atomvm/atomvm_packbeam to check Dialyzer
+
+name: Dialyzer
+
+on:
+  push:
+    paths:
+      - "src/**"
+      - "rebar.config"
+  pull_request:
+    paths:
+      - "src/**"
+      - "rebar.config"
+
+jobs:
+  dialyzer:
+    runs-on: ubuntu-24.04
+    container: erlang:${{ matrix.otp }}
+    strategy:
+      matrix:
+        otp: ["25", "26", "27", "28"]
+    permissions:
+      contents: read
+
+    steps:
+      - name: "Checkout repo"
+        uses: actions/checkout@v6
+        with:
+          submodules: "recursive"
+
+      - name: "Restore PLT cache"
+        uses: actions/cache@v4
+        with:
+          path: _build/default/*_plt*
+          key: plt-${{ matrix.otp }}-${{ hashFiles('rebar.config') }}
+          restore-keys: |
+            plt-${{ matrix.otp }}-
+
+      - name: "Run Dialyzer"
+        run: rebar3 dialyzer
