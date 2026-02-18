@@ -52,6 +52,7 @@
 -type avm_element_name() :: string().
 -type options() :: #{
     prune => boolean(),
+    lib => boolean(),
     start_module => module() | undefined,
     application_module => module() | undefined,
     include_lines => boolean()
