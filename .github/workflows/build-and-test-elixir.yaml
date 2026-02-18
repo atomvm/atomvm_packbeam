@@ -1,0 +1,79 @@
+#
+#  Copyright 2022 Fred Dushin <fred@dushin.net>
+#
+#  SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
+#
+
+name: Build and Test Elixir PackBEAM.API
+
+on:
+  push:
+    paths:
+      - "mix.exs"
+      - "lib/**/*.exs"
+      - "lib/**/*.ex"
+      - "test/**/*.exs"
+      - "test/**/*.ex"
+  pull_request:
+    paths:
+      - "mix.exs"
+      - "lib/**/*.ex"
+      - "lib/**/*.exs"
+      - "test/**/*.exs"
+      - "test/**/*.ex"
+  workflow_dispatch:
+
+env:
+  ELIXIR_ASSERT_TIMEOUT: 2000
+  ELIXIRC_OPTS: "--warnings-as-errors"
+  LANG: C.UTF-8
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test-elixir:
+    runs-on: "ubuntu-24.04"
+    strategy:
+      fail-fast: false
+      matrix:
+        # otp: ["25", "26", "27", "28"]
+        include:
+        - otp: "25"
+          elixir_version: "1.14"
+        - otp: "26"
+          elixir_version: "1.17"
+        - otp: "27"
+          elixir_version: "1.18"
+        - otp: "28"
+          elixir_version: "1.19"
+
+    steps:
+    # Setup
+    - name: "Checkout repo"
+      uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
+
+    - uses: erlef/setup-beam@v1
+      with:
+        otp-version: ${{ matrix.otp }}
+        elixir-version: ${{ matrix.elixir_version }}
+
+    # Builder info
+    - name: "System info"
+      run: |
+        echo "**uname:**"
+        uname -a
+        echo "**OTP version:**"
+        cat $(dirname $(which erlc))/../releases/RELEASES || true
+        echo "**Elixir version:**"
+        elixir --version
+
+    # Build
+    - name: "Compile with mix"
+      run: mix compile
+
+    # Test
+    - name: "Run tests with mix"
+      run: mix test
