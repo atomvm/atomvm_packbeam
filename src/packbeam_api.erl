@@ -747,8 +747,16 @@ parse_beam(Data, _Tmp, in_data, _Pos, Accum) ->
     case is_beam(Accum) orelse is_entrypoint(Accum) of
         true ->
             StrippedData = strip_padding(Data),
-            {ok, {Module, ChunkRefs}} = beam_lib:chunks(StrippedData, [imports, exports, atoms]),
-            [{module, Module}, {chunk_refs, ChunkRefs}, {data, StrippedData} | Accum];
+            {ok, {Module, ChunkRefs}} = beam_lib:chunks(
+                StrippedData, [imports, exports, atoms, "LitT", "LitU"], [allow_missing_chunks]
+            ),
+            [
+                {module, Module},
+                {chunk_refs, ChunkRefs},
+                {uncompressed_literals, get_uncompressed_literals(ChunkRefs)},
+                {data, StrippedData}
+                | Accum
+            ];
         _ ->
             [{data, Data} | Accum]
     end.
@@ -757,6 +765,20 @@ strip_padding(<<0:8, Rest/binary>>) ->
     strip_padding(Rest);
 strip_padding(Data) ->
     Data.
+
+%% @private
+get_uncompressed_literals(ChunkRefs) ->
+    case proplists:get_value("LitT", ChunkRefs) of
+        missing_chunk ->
+            case proplists:get_value("LitU", ChunkRefs) of
+                missing_chunk -> undefined;
+                LitU -> LitU
+            end;
+        <<0:32, Data/binary>> ->
+            Data;
+        <<_Size:4/binary, Data/binary>> ->
+            zlib:uncompress(Data)
+    end.
 
 %% @private
 maybe_uncompress_literals(Chunks) ->

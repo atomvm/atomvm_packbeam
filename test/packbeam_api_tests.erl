@@ -553,6 +553,98 @@ packbeam_extract_test() ->
 
     ok.
 
+packbeam_create_prune_supervisor_callback_test() ->
+    %% Test that prune does not remove a module referenced only in a
+    %% supervisor child spec literal. In this scenario:
+    %%   start_mod (entrypoint) -> my_sup (via atom) -> my_worker (only in literal)
+    %% The my_worker atom only appears in the literals table of my_sup,
+    %% not in its atoms chunk or imports. Prune must still keep it.
+    AVMFile = dest_dir("packbeam_prune_sup_callback_test.avm"),
+    ?assertMatch(
+        ok,
+        packbeam_api:create(
+            AVMFile,
+            [
+                test_beam_path("start_mod.beam"),
+                test_beam_path("my_sup.beam"),
+                test_beam_path("my_worker.beam"),
+                test_beam_path("d.beam")
+            ],
+            #{prune => true}
+        )
+    ),
+
+    ParsedFiles = packbeam_api:list(AVMFile),
+
+    ?assert(is_list(ParsedFiles)),
+
+    %% start_mod calls my_sup, my_sup has my_worker only in literal child specs.
+    %% d is not referenced by anyone.
+    ?assert(parsed_file_contains_module(start_mod, ParsedFiles)),
+    ?assert(parsed_file_contains_module(my_sup, ParsedFiles)),
+    ?assert(parsed_file_contains_module(my_worker, ParsedFiles)),
+    ?assertNot(parsed_file_contains_module(d, ParsedFiles)),
+
+    %% Pruned file should be smaller than unpruned (d.beam was removed).
+    UnprunedAVMFile = dest_dir("packbeam_prune_sup_callback_unpruned.avm"),
+    ok = packbeam_api:create(
+        UnprunedAVMFile,
+        [
+            test_beam_path("start_mod.beam"),
+            test_beam_path("my_sup.beam"),
+            test_beam_path("my_worker.beam"),
+            test_beam_path("d.beam")
+        ],
+        #{}
+    ),
+    PrunedSize = filelib:file_size(AVMFile),
+    UnprunedSize = filelib:file_size(UnprunedAVMFile),
+    ?assert(PrunedSize < UnprunedSize),
+
+    ok.
+
+packbeam_create_prune_supervisor_callback_from_avm_test() ->
+    %% Same as above, but with my_worker coming from a lib AVM file.
+    %% This tests the AVM parsing path where uncompressed_literals
+    %% may not be available.
+    LibAVMFile = dest_dir("packbeam_prune_sup_callback_lib.avm"),
+    ?assertMatch(
+        ok,
+        packbeam_api:create(
+            LibAVMFile,
+            [
+                test_beam_path("my_sup.beam"),
+                test_beam_path("my_worker.beam"),
+                test_beam_path("d.beam")
+            ],
+            #{lib => true}
+        )
+    ),
+
+    AVMFile = dest_dir("packbeam_prune_sup_callback_from_avm_test.avm"),
+    ?assertMatch(
+        ok,
+        packbeam_api:create(
+            AVMFile,
+            [
+                test_beam_path("start_mod.beam"),
+                LibAVMFile
+            ],
+            #{prune => true}
+        )
+    ),
+
+    ParsedFiles = packbeam_api:list(AVMFile),
+
+    ?assert(is_list(ParsedFiles)),
+
+    ?assert(parsed_file_contains_module(start_mod, ParsedFiles)),
+    ?assert(parsed_file_contains_module(my_sup, ParsedFiles)),
+    ?assert(parsed_file_contains_module(my_worker, ParsedFiles)),
+    ?assertNot(parsed_file_contains_module(d, ParsedFiles)),
+
+    ok.
+
 file_exists(Path) ->
     filelib:is_file(Path).
 
