@@ -570,7 +570,7 @@ packbeam_create_prune_supervisor_callback_test() ->
                 test_beam_path("my_worker.beam"),
                 test_beam_path("d.beam")
             ],
-            #{prune => true}
+            #{prune => modules}
         )
     ),
 
@@ -630,7 +630,7 @@ packbeam_create_prune_supervisor_callback_from_avm_test() ->
                 test_beam_path("start_mod.beam"),
                 LibAVMFile
             ],
-            #{prune => true}
+            #{prune => modules}
         )
     ),
 

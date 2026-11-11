@@ -37,6 +37,8 @@
 %% @doc     Deprecated.  Use the packbeam_api module, instead.
 %% @end
 %%-----------------------------------------------------------------------------
+-spec create(OutputPath :: packbeam_api:path(), InputPaths :: [packbeam_api:path()]) ->
+    ok | {error, Reason :: term()}.
 create(OutputPath, InputPaths) ->
     io:format("WARNING.  packbeam:create/2 is deprecated.  Use packbeam_api::create/2 instead.~n"),
     packbeam_api:create(OutputPath, InputPaths).
@@ -45,6 +47,12 @@ create(OutputPath, InputPaths) ->
 %% @doc     Deprecated.  Use the packbeam_api module, instead.
 %% @end
 %%-----------------------------------------------------------------------------
+-spec create(
+    OutputPath :: packbeam_api:path(),
+    InputPaths :: [packbeam_api:path()],
+    Prune :: boolean(),
+    StartModule :: module() | undefined
+) -> ok | {error, Reason :: term()}.
 create(OutputPath, InputPaths, Prune, StartModule) ->
     io:format("WARNING.  packbeam:create/4 is deprecated.  Use packbeam_api::create/3 instead.~n"),
     packbeam_api:create(OutputPath, InputPaths, Prune, StartModule).
@@ -53,6 +61,7 @@ create(OutputPath, InputPaths, Prune, StartModule) ->
 %% @doc     Deprecated.  Use the packbeam_api module, instead.
 %% @end
 %%-----------------------------------------------------------------------------
+-spec list(InputPath :: packbeam_api:path()) -> [packbeam_api:avm_element()].
 list(InputPath) ->
     io:format("WARNING.  packbeam:list/1 is deprecated.  Use packbeam_api::list/1 instead.~n"),
     packbeam_api:list(InputPath).
@@ -61,6 +70,11 @@ list(InputPath) ->
 %% @doc     Deprecated.  Use the packbeam_api module, instead.
 %% @end
 %%-----------------------------------------------------------------------------
+-spec delete(
+    OutputPath :: packbeam_api:path(),
+    InputPath :: packbeam_api:path(),
+    Names :: [packbeam_api:avm_element_name()]
+) -> ok | {error, Reason :: term()}.
 delete(OutputPath, InputPath, Names) ->
     io:format("WARNING.  packbeam:delete/3 is deprecated.  Use packbeam_api::delete/3 instead.~n"),
     packbeam_api:delete(OutputPath, InputPath, Names).
@@ -102,9 +116,14 @@ main(Argv) ->
                 end
             catch
                 _:Exception:S ->
-                    io:format("packbeam: caught exception: ~p~n", [Exception]),
-                    io:format("Stacktrace: ~n~p~n", [S]),
-                    print_help(),
+                    case format_error(Exception) of
+                        {ok, Message} ->
+                            io:format(standard_error, "packbeam: error: ~s~n", [Message]);
+                        error ->
+                            io:format("packbeam: caught exception: ~p~n", [Exception]),
+                            io:format("Stacktrace: ~n~p~n", [S]),
+                            print_help()
+                    end,
                     erlang:halt(255)
             end
     end.
@@ -129,7 +148,15 @@ print_help() ->
         "           <output-avm-file> is the output AVM file,~n"
         "           [<input-file>]+ is a list of one or more input files,~n"
         "           and <options> are among the following:~n"
-        "              [--prune|-p]           Prune dependencies~n"
+        "              [--prune|-p]           Prune functions from init:boot/1~n"
+        "              [--prune-modules]      Legacy module-only pruning~n"
+        "              [--prune-functions]    Remove unreachable functions and literals~n"
+        "              [--reference <avm>]    Analyze library without bundling it (repeatable)~n"
+        "              [--external|-e <avm>]  Bundle library AVM (repeatable)~n"
+        "              [--keep M:F/A]         Additional reachable function (repeatable)~n"
+        "              [--suggest-drivers]    Suggest unused port drivers and NIFs~n"
+        "              [--precision <mode>]   full (default), adaptive, insensitive or coarse~n"
+        "              [--jit-types]          Trust the analysis: add types for the JIT, drop proven tests~n"
         "              [--lib|-l]             Create a library avm, with no start module~n"
         "              [--start|-s <module>]  Start module~n"
         "              [--remove_lines|-r]    Remove line number information from AVM files~n"
@@ -183,17 +210,22 @@ get_version() ->
 do_create(Opts, Args) ->
     validate_args(create, Opts, Args),
     [OutputFile | InputFiles] = Args,
-    ok = packbeam_api:create(
+    Result = packbeam_api:create(
         OutputFile,
-        InputFiles,
+        InputFiles ++ maps:get(external, Opts, []),
         #{
             lib => maps:get(lib, Opts, false),
             prune => maps:get(prune, Opts, false),
             start_module => maps:get(start_module, Opts, undefined),
-            include_lines => not maps:get(remove_lines, Opts, false)
+            include_lines => not maps:get(remove_lines, Opts, false),
+            references => maps:get(references, Opts, []),
+            keep => maps:get(keep, Opts, []),
+            suggest_drivers => maps:get(suggest_drivers, Opts, false),
+            precision => maps:get(precision, Opts, full),
+            jit_types => maps:get(jit_types, Opts, false)
         }
     ),
-    0.
+    check_written(OutputFile, Result).
 
 %% @private
 do_list(Opts, Args) ->
@@ -216,8 +248,52 @@ do_delete(Opts, Args) ->
     validate_args(delete, Opts, Args),
     [InputFile | _] = Args,
     OutputFile = maps:get(output, Opts, InputFile),
-    packbeam_api:delete(OutputFile, InputFile, Args),
-    0.
+    check_written(OutputFile, packbeam_api:delete(OutputFile, InputFile, Args)).
+
+%% @private
+check_written(_OutputFile, ok) ->
+    0;
+check_written(OutputFile, {error, Reason}) ->
+    throw(io_lib:format("Unable to write ~s: ~s", [OutputFile, file:format_error(Reason)])).
+
+%% @private
+%% A sentence for the errors a user can cause and fix; anything else is a bug
+%% in packbeam, reported with its stacktrace.
+format_error(no_pruning_roots) ->
+    {ok,
+        "Nothing to prune from: no input BEAM file exports start/0 and no function was "
+        "given with --keep. Select the start module with --start or, when building a "
+        "library with --lib, name the functions it provides with --keep M:F/A."};
+format_error({missing_root, {M, F, A}}) ->
+    {ok,
+        io_lib:format(
+            "~p:~p/~p, given with --keep or as the start function, is not defined by any "
+            "input or reference BEAM file.",
+            [M, F, A]
+        )};
+format_error({cannot_prune_native_code, M}) ->
+    {ok,
+        io_lib:format(
+            "Module ~p contains precompiled native code, which cannot be pruned by function. "
+            "Give its BEAM file without native code, or use --prune-modules.",
+            [M]
+        )};
+format_error({start_module_not_found, M}) ->
+    {ok, io_lib:format("Start module ~p is not among the input files.", [M])};
+format_error({start_module_not_start_beam, M}) ->
+    {ok,
+        io_lib:format(
+            "Start module ~p is not marked as an entry point: --lib clears the start flag of "
+            "modules from AVM files.",
+            [M]
+        )};
+format_error(Message) when is_list(Message) ->
+    case io_lib:deep_char_list(Message) of
+        true -> {ok, Message};
+        false -> error
+    end;
+format_error(_) ->
+    error.
 
 %% @private
 validate_args(create, _Opts, [OutputPath | _Rest] = _Args) ->
@@ -240,10 +316,17 @@ validate_args(list, _Opts, [InputPath | _Rest] = _Args) ->
 validate_args(list, _Opts, [] = _Args) ->
     throw("Missing input option");
 %%
-validate_args(extract, _Opts, [InputPath | _Rest] = _Args) ->
+validate_args(extract, Opts, [InputPath | _Rest] = _Args) ->
     case not filelib:is_file(InputPath) of
         true ->
             throw(io_lib:format("Input file (~p) does not exist", [InputPath]));
+        _ ->
+            ok
+    end,
+    OutputDir = maps:get(output, Opts, "."),
+    case filelib:is_dir(OutputDir) of
+        false ->
+            throw(io_lib:format("Output directory (~p) does not exist", [OutputDir]));
         _ ->
             ok
     end;
@@ -317,6 +400,37 @@ parse_args(Argv) ->
 %% @private
 parse_args([], {Opts, Args}) ->
     {Opts, lists:reverse(Args)};
+parse_args(["--prune-modules" | T], {Opts, Args}) ->
+    parse_args(T, {Opts#{prune => modules}, Args});
+parse_args(["--prune-functions" | T], {Opts, Args}) ->
+    parse_args(T, {Opts#{prune => functions}, Args});
+parse_args(["--reference", Path | T], {Opts, Args}) ->
+    parse_args(T, {Opts#{references => maps:get(references, Opts, []) ++ [Path]}, Args});
+parse_args(["-e", Path | T], State) ->
+    parse_args(["--external", Path | T], State);
+parse_args(["--external", Path | T], {Opts, Args}) ->
+    parse_args(T, {Opts#{external => maps:get(external, Opts, []) ++ [Path]}, Args});
+parse_args(["--keep", MFA | T], {Opts, Args}) ->
+    Root =
+        try
+            [M, F, A] = string:tokens(MFA, ":/"),
+            Arity = list_to_integer(A),
+            true = Arity >= 0,
+            {list_to_atom(M), list_to_atom(F), Arity}
+        catch
+            error:_ -> bad_option("--keep", MFA)
+        end,
+    parse_args(T, {Opts#{keep => maps:get(keep, Opts, []) ++ [Root]}, Args});
+parse_args(["--precision", Mode | T], {Opts, Args}) when
+    Mode =:= "full"; Mode =:= "adaptive"; Mode =:= "insensitive"; Mode =:= "coarse"
+->
+    parse_args(T, {Opts#{precision => list_to_atom(Mode)}, Args});
+parse_args(["--precision", Mode | _], _) ->
+    bad_option("--precision", Mode);
+parse_args(["--jit-types" | T], {Opts, Args}) ->
+    parse_args(T, {Opts#{jit_types => true}, Args});
+parse_args(["--suggest-drivers" | T], {Opts, Args}) ->
+    parse_args(T, {Opts#{suggest_drivers => true}, Args});
 parse_args(["-out", Path | T], {Opts, Args}) ->
     io:format("WARNING.  Deprecated option.  Use --out instead.~n"),
     parse_args(["--out", Path | T], {Opts, Args});
@@ -355,3 +469,9 @@ parse_args(["--format", Format | T], {Opts, Args}) ->
     parse_args(T, {Opts#{format => Format}, Args});
 parse_args([H | T], {Opts, Args}) ->
     parse_args(T, {Opts, [H | Args]}).
+
+%% @private
+bad_option(Option, Value) ->
+    io:format(standard_error, "packbeam: invalid value for ~s: ~s~n", [Option, Value]),
+    print_help(),
+    erlang:halt(255).

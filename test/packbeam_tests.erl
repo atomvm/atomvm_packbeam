@@ -211,7 +211,7 @@ packbeam_create_prune_test() ->
         lists:join(" ", [
             Packbeam,
             "create",
-            "--prune",
+            "--prune-modules",
             "--start",
             "b",
             AVMFile,
@@ -273,16 +273,162 @@ packbeam_prune_no_start_module_test() ->
 
     CMD = lists:flatten(
         lists:join(" ", [
-            Packbeam, "create", "--prune", "--start", "b", AVMFile, BEAM_D, BEAM_E, BEAM_F, TXT
+            Packbeam,
+            "create",
+            "--prune-modules",
+            "--start",
+            "b",
+            AVMFile,
+            BEAM_D,
+            BEAM_E,
+            BEAM_F,
+            TXT
         ])
     ),
-    Fail = os:cmd(CMD),
+    Fail = os:cmd(CMD ++ " 2>&1"),
     ?assertMatch(
         ok,
-        expect_contains("packbeam: caught exception:", Fail)
+        expect_contains("packbeam: error:", Fail)
     ),
 
     file:delete(AVMFile),
+    ok.
+
+packbeam_invalid_option_values_test() ->
+    AVMFile = dest_dir("packbeam_invalid_option_values_test.avm"),
+    BEAM_A = test_beam_path("a.beam"),
+    Packbeam = filename:absname(?PACKBEAM),
+    lists:foreach(
+        fun({Option, Value}) ->
+            CMD = lists:flatten(
+                lists:join(" ", [Packbeam, "create", "-p", Option, Value, AVMFile, BEAM_A])
+            ),
+            Output = os:cmd(CMD ++ " 2>&1; echo \"exit=$?\""),
+            ?assertMatch(
+                ok,
+                expect_contains("packbeam: invalid value for " ++ Option ++ ": " ++ Value, Output)
+            ),
+            ?assertMatch(ok, expect_contains("exit=255", Output))
+        end,
+        [
+            {"--keep", "foo:bar"},
+            {"--keep", "foo:bar/x"},
+            {"--keep", "foo:bar/-1"},
+            {"--precision", "fast"}
+        ]
+    ),
+    ?assertNot(filelib:is_file(AVMFile)).
+
+packbeam_prune_errors_test() ->
+    AVMFile = dest_dir("packbeam_prune_errors_test.avm"),
+    RefFile = dest_dir("packbeam_prune_errors_ref.avm"),
+    BEAM_A = test_beam_path("a.beam"),
+    BEAM_B = test_beam_path("b.beam"),
+    BEAM_C = test_beam_path("c.beam"),
+    Packbeam = filename:absname(?PACKBEAM),
+    Run = fun(Args) ->
+        os:cmd(lists:flatten(lists:join(" ", [Packbeam | Args])) ++ " 2>&1; echo \"exit=$?\"")
+    end,
+
+    NoRoots = Run(["create", "-l", "-p", AVMFile, BEAM_A]),
+    ?assertMatch(ok, expect_contains("packbeam: error: Nothing to prune from", NoRoots)),
+    ?assertMatch(ok, expect_contains("exit=255", NoRoots)),
+    ?assertMatch(nomatch, expect_contains("Stacktrace", NoRoots)),
+
+    {ok, _, Chunks} = beam_lib:all_chunks(test_beam_path("a.beam")),
+    {ok, Native} = beam_lib:build_module(Chunks ++ [{"avmN", <<1, 2, 3>>}]),
+    NativeBeam = dest_dir("packbeam_prune_errors_native/a.beam"),
+    ok = filelib:ensure_dir(NativeBeam),
+    ok = file:write_file(NativeBeam, Native),
+    NativeOut = Run(["create", "-p", "--start", "b", AVMFile, NativeBeam, BEAM_B]),
+    ?assertMatch(ok, expect_contains("packbeam: error: Module a contains precompiled", NativeOut)),
+    ?assertMatch(nomatch, expect_contains("Stacktrace", NativeOut)),
+
+    %% A reference given twice, and a module both bundled and referenced.
+    ?assertMatch(ok, expect_contains("exit=0", Run(["create", "-l", RefFile, BEAM_A]))),
+    ?assertMatch(
+        ok,
+        expect_contains(
+            "exit=0",
+            Run([
+                "create",
+                "-p",
+                "--start",
+                "b",
+                "--reference",
+                RefFile,
+                "--reference",
+                RefFile,
+                AVMFile,
+                BEAM_B,
+                BEAM_C
+            ])
+        )
+    ),
+    ?assertMatch(
+        ok,
+        expect_contains(
+            "exit=0",
+            Run([
+                "create",
+                "-p",
+                "--start",
+                "b",
+                "--reference",
+                RefFile,
+                AVMFile,
+                BEAM_A,
+                BEAM_B,
+                BEAM_C
+            ])
+        )
+    ),
+
+    %% A --keep function that no input or reference defines.
+    MissingRoot = Run([
+        "create", "-p", "--start", "b", "--keep", "a:nope/0", AVMFile, BEAM_A, BEAM_B
+    ]),
+    ?assertMatch(
+        ok,
+        expect_contains(
+            "packbeam: error: a:nope/0, given with --keep or as the start function, "
+            "is not defined by any input or reference BEAM file.",
+            MissingRoot
+        )
+    ),
+    ?assertMatch(ok, expect_contains("exit=255", MissingRoot)),
+    ?assertMatch(nomatch, expect_contains("Stacktrace", MissingRoot)),
+
+    %% A start module that is not among the inputs.
+    NoStart = Run(["create", "--start", "zzz", AVMFile, BEAM_A, BEAM_B]),
+    ?assertMatch(
+        ok,
+        expect_contains("packbeam: error: Start module zzz is not among the input files.", NoStart)
+    ),
+    ?assertMatch(ok, expect_contains("exit=255", NoStart)),
+    ?assertMatch(nomatch, expect_contains("Stacktrace", NoStart)),
+
+    %% A start module coming from an AVM file with --lib, which clears the start flag.
+    NotStartBeam = Run(["create", "-l", "--start", "a", AVMFile, RefFile]),
+    ?assertMatch(
+        ok,
+        expect_contains(
+            "packbeam: error: Start module a is not marked as an entry point", NotStartBeam
+        )
+    ),
+    ?assertMatch(ok, expect_contains("exit=255", NotStartBeam)),
+    ?assertMatch(nomatch, expect_contains("Stacktrace", NotStartBeam)),
+
+    %% An output file that cannot be written.
+    BadOut = dest_dir("packbeam_prune_errors_missing_dir/out.avm"),
+    BadWrite = Run(["create", BadOut, BEAM_A, BEAM_B]),
+    ?assertMatch(ok, expect_contains("packbeam: error: Unable to write " ++ BadOut, BadWrite)),
+    ?assertMatch(ok, expect_contains("exit=255", BadWrite)),
+    ?assertMatch(nomatch, expect_contains("Stacktrace", BadWrite)),
+
+    file:delete(AVMFile),
+    file:delete(RefFile),
+    file:delete(NativeBeam),
     ok.
 
 packbeam_dest_fail_test() ->
@@ -295,10 +441,10 @@ packbeam_dest_fail_test() ->
     CMD1 = lists:flatten(
         lists:join(" ", [Packbeam, "create", "/tmp", BEAM_A, BEAM_B, BEAM_F, TXT])
     ),
-    FAIL1 = os:cmd(CMD1),
+    FAIL1 = os:cmd(CMD1 ++ " 2>&1"),
     ?assertMatch(
         ok,
-        expect_contains("packbeam: caught exception:", FAIL1)
+        expect_contains("packbeam: error:", FAIL1)
     ),
 
     CMD2 = lists:flatten(
@@ -306,10 +452,10 @@ packbeam_dest_fail_test() ->
             Packbeam, "create", "/usr/should_not_allowed.avm", BEAM_A, BEAM_B, BEAM_F, TXT
         ])
     ),
-    FAIL2 = os:cmd(CMD2),
+    FAIL2 = os:cmd(CMD2 ++ " 2>&1"),
     ?assertMatch(
         ok,
-        expect_contains("packbeam: caught exception:", FAIL2)
+        expect_contains("packbeam: error:", FAIL2)
     ),
 
     CMD3 = lists:flatten(
@@ -317,10 +463,10 @@ packbeam_dest_fail_test() ->
             Packbeam, "create", "/likely_doesnt_exist/should_fail.avm", BEAM_A, BEAM_B, BEAM_F, TXT
         ])
     ),
-    FAIL3 = os:cmd(CMD3),
+    FAIL3 = os:cmd(CMD3 ++ " 2>&1"),
     ?assertMatch(
         ok,
-        expect_contains("packbeam: caught exception:", FAIL3)
+        expect_contains("packbeam: error:", FAIL3)
     ),
 
     ok.
@@ -340,10 +486,10 @@ packbeam_create_src_fail_test() ->
             Packbeam, "create", Dest, BEAM_A, BEAM_B, BEAM_C, BEAM_B, BEAM_C, BEAM_D, NO_BEAM, TXT
         ])
     ),
-    FAIL = os:cmd(CMD),
+    FAIL = os:cmd(CMD ++ " 2>&1"),
     ?assertMatch(
         ok,
-        expect_contains("packbeam: caught exception:", FAIL)
+        expect_contains("packbeam: error:", FAIL)
     ),
 
     ok.
@@ -361,7 +507,7 @@ packbeam_list_test() ->
         lists:join(" ", [
             Packbeam,
             "create",
-            "--prune",
+            "--prune-modules",
             "--start",
             "b",
             AVMFile,
@@ -388,17 +534,17 @@ packbeam_list_test() ->
     ),
 
     LIST_CMD1 = lists:flatten(lists:join(" ", [Packbeam, "list", "/tmp"])),
-    FAIL1 = os:cmd(LIST_CMD1),
+    FAIL1 = os:cmd(LIST_CMD1 ++ " 2>&1"),
     ?assertMatch(
         ok,
-        expect_contains("packbeam: caught exception:", FAIL1)
+        expect_contains("packbeam: error:", FAIL1)
     ),
 
     LIST_CMD2 = lists:flatten(lists:join(" ", [Packbeam, "list", "/should_not_exist.txt"])),
-    FAIL2 = os:cmd(LIST_CMD2),
+    FAIL2 = os:cmd(LIST_CMD2 ++ " 2>&1"),
     ?assertMatch(
         ok,
-        expect_contains("packbeam: caught exception:", FAIL2)
+        expect_contains("packbeam: error:", FAIL2)
     ),
 
     file:delete(AVMFile),
@@ -421,7 +567,9 @@ packbeam_create_dependent_avm_test() ->
     AVMFile2 = dest_dir("packbeam_create_dependent_avm_test2.avm"),
     BEAM_X = test_beam_path("x.beam"),
     CMD2 = lists:flatten(
-        lists:join(" ", [Packbeam, "create", "--prune", "--start", "x", AVMFile2, BEAM_X, AVMFile])
+        lists:join(" ", [
+            Packbeam, "create", "--prune-modules", "--start", "x", AVMFile2, BEAM_X, AVMFile
+        ])
     ),
     ?assertMatch("0", string:trim(os:cmd(CMD2 ++ "; echo $?"))),
 
@@ -502,14 +650,14 @@ packbeam_extract_test() ->
     CMD5 = lists:flatten(
         lists:join(" ", [Packbeam, "extract", "--out", ScratchDir3, AVMFile ++ "-garbage"])
     ),
-    Garbage = os:cmd(CMD5),
-    ?assertMatch(ok, expect_contains("packbeam: caught exception:", Garbage)),
+    Garbage = os:cmd(CMD5 ++ " 2>&1"),
+    ?assertMatch(ok, expect_contains("packbeam: error:", Garbage)),
 
     CMD6 = lists:flatten(
         lists:join(" ", [Packbeam, "extract", "--out", ?BUILD_DIR ++ "does-not-exist", AVMFile])
     ),
-    BAD_OUTDIR = os:cmd(CMD6),
-    ?assertMatch(ok, expect_contains("packbeam: caught exception:", BAD_OUTDIR)),
+    BAD_OUTDIR = os:cmd(CMD6 ++ " 2>&1"),
+    ?assertMatch(ok, expect_contains("packbeam: error:", BAD_OUTDIR)),
 
     file:delete(AVMFile),
     file:delete(ScratchDir ++ "/a.beam"),

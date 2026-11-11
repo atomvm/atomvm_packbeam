@@ -1,0 +1,41 @@
+#
+#  Copyright 2026 Paul Guyot <pguyot@kallisys.net>
+#
+#  SPDX-License-Identifier: Apache-2.0 OR LGPL-2.1-or-later
+#
+
+# src/packbeam_drivers.hrl lists AtomVM's NIFs and port drivers. Check it
+# matches the latest AtomVM release, and every week catch a new release.
+
+name: "Check AtomVM Drivers"
+
+on:
+  push:
+    paths:
+      - 'src/packbeam_drivers.hrl'
+      - 'scripts/generate_drivers.escript'
+      - 'scripts/check_drivers.sh'
+      - '.github/workflows/check-drivers.yaml'
+  pull_request:
+    paths:
+      - 'src/packbeam_drivers.hrl'
+      - 'scripts/generate_drivers.escript'
+      - 'scripts/check_drivers.sh'
+      - '.github/workflows/check-drivers.yaml'
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  check-drivers:
+    runs-on: ubuntu-24.04
+    container: erlang:28
+    permissions:
+      contents: read
+
+    steps:
+    - name: "Checkout repo"
+      uses: actions/checkout@v6
+
+    - name: "Check drivers match the latest AtomVM release"
+      run: scripts/check_drivers.sh

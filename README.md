@@ -81,7 +81,15 @@ On-line help is available via the `help` sub-command:
             <output-avm-file> is the output AVM file,
             [<input-file>]+ is a list of one or more input files,
             and <options> are among the following:
-                [--prune|-p]           Prune dependencies
+                [--prune|-p]           Prune functions from init:boot/1
+                [--prune-modules]      Legacy module-only pruning
+                [--prune-functions]    Remove unreachable functions and literals
+                [--reference <avm>]    Analyze library without bundling it (repeatable)
+                [--external|-e <avm>]  Bundle library AVM (repeatable)
+                [--keep M:F/A]         Additional reachable function (repeatable)
+                [--suggest-drivers]    Suggest unused port drivers and NIFs
+                [--precision <mode>]   full (default), adaptive, insensitive or coarse
+                [--jit-types]          Trust the analysis: add types for the JIT, drop proven tests
                 [--lib|-l]             Create a library avm, with no start module
                 [--start|-s <module>]  Start module
                 [--remove_lines|-r]    Remove line number information from AVM files
@@ -168,9 +176,7 @@ export `start/0`.
 
 #### Pruning
 
-If you specify the `--prune` (alternatively, `-p`) flag, then `packbeam` will only include beam files that are transitively dependent on the entry-point beam.  Transitive dependencies are determined by imports, as well as use of an atom in a module (e.g, as the result of a dynamic function call, based on a module name).
-
-If there is no beam file with a `start/0` entry-point defined in the list of input modules and the `--prune` flag is used, the command will fail.  You should _not_ use the `--prune` flag if you are trying to build libraries suitable for inclusion on other AtomVM applications.
+If you specify the `--prune` (alternatively, `-p`) flag, then `packbeam` will only include the functions and literals your application can reach, including from the libraries you bundle with it.  See [Function and literal pruning](#function-and-literal-pruning).
 
 #### Line number information
 
@@ -257,7 +263,7 @@ Alternatively, you may specify a set of options with the `packbeam_api:create/3`
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `prune` | `boolean()` | `false` | Specify whether to prune the output AVM file.  Pruned AVM files can take considerably less space and hence may lead to faster development times. |
+| `prune` | `boolean() \| functions \| modules` | `false` | `true` or `functions` prunes functions and literals; `modules` selects legacy module pruning. |
 | `lib` | `boolean()` | `false` | Create a library (no entrypoint) |
 | `start` | `module()` | n/a | Specify the start module, if it can't be determined automatically from the application. |
 | `application` | `module()` | n/a | Specify the application module.  The `<application>.app` file will be encoded and included as an element in the AVM file with the path `<module>/priv/application.bin` |
@@ -322,3 +328,99 @@ You can extract elements from an AVM file using the `packbeam_api:extract/3` fun
         ["foo.beam", "myapp/priv/sample.txt"],
         "/tmp"
     ).
+
+### Function and literal pruning
+
+`--prune` (or `-p`) keeps only the code your application can actually run.
+Starting from the way AtomVM boots it, packbeam follows every call and removes
+the functions, and the literals, that nothing reaches. Libraries are pruned
+along with your own code, so a small application no longer carries the whole
+standard library.
+
+packbeam needs the library your application runs with. If you flash the
+library together with the application, bundle it with `-e` (or `--external`)
+and it is pruned too:
+
+```sh
+packbeam create -p --start my_app -e atomvmlib.avm my_app.avm my_app.beam
+```
+
+If the library is flashed separately, pass it with `--reference`: it is
+analyzed but not included in the output.
+
+```sh
+packbeam create -p --start my_app --reference atomvmlib.avm my_app.avm my_app.beam
+```
+
+Both options can be repeated. A pruned package only works with the start
+module and the library it was built for. As on the device, the first copy of a
+module wins: bundled modules shadow referenced ones, and earlier references
+shadow later ones.
+
+Without the library, packbeam assumes each call into it may call back the
+functions and modules it is given, and send any message. The package is
+usually larger, and packbeam warns once for each library module that is
+called.
+
+`--prune-modules` only drops whole modules that nothing imports or names.
+
+#### When a call cannot be resolved
+
+Some calls are only known at run time, for example a module name read from a
+file or received in a message. packbeam keeps every function such a call could
+plausibly reach and prints a warning naming the call and how it is reached.
+Functions the analysis cannot find at all, because nothing in the code names
+them, are removed. If your application needs such a function, keep it
+explicitly:
+
+```sh
+packbeam create -p --start my_app --keep my_callbacks:handle_event/2 ...
+```
+
+This is also needed with distributed Erlang: a function that only other nodes
+call, with `rpc:call/4` or `erpc:call/4` for example, is not called by
+anything in the package, so it must be kept with `--keep`.
+
+To prune a library with no start module, combine `--lib` with `--keep`.
+
+#### Options
+
+* `--precision <mode>` trades precision for speed. Pruning a typical
+  application with its library takes about 20 to 25 seconds with the default,
+  `full`, which is meant for release builds. `adaptive` gives the same result
+  on most applications. `insensitive` and `coarse` are faster and keep more
+  code; use them for very large programs, such as a bundled Erlang compiler.
+* `--jit-types` also makes the output faster and smaller once compiled to
+  native code by AtomVM's JIT: it passes what the analysis learned about
+  types to the JIT, and removes tests the analysis proves always pass
+  (typically 3% less native code). It trusts the analysis: should the
+  analysis be wrong, native code could crash instead of raising an exception,
+  so it is off by default. It only has an effect with `--prune`.
+* `--suggest-drivers` lists the port drivers and NIFs the application never
+  uses, and the build switches that would remove them from a dedicated AtomVM
+  build.
+
+#### Using pruning from a build tool
+
+The same options are available through `packbeam_api:create/3`:
+
+```erlang
+packbeam_api:create("my_app.avm", BeamPaths ++ BundledAvmPaths, #{
+    prune => true,
+    start_module => my_app,
+    references => ["atomvmlib.avm"],
+    keep => [{my_callbacks, handle_event, 2}],
+    precision => full,
+    jit_types => false,
+    suggest_drivers => false,
+    diagnostics => fun(Report) -> io:format("~p~n", [Report]) end,
+    precompile => fun(Module, Beam) -> my_aot:compile(Module, Beam) end
+}).
+```
+
+`diagnostics` receives a report with the reachable functions, the warnings
+and the drivers in use; without it, warnings are printed to standard error.
+`precompile` is called with each module after pruning, to compile it ahead of
+time: modules that are already compiled to native code cannot be pruned.
+
+The input BEAM files must be supported by the OTP version running packbeam.

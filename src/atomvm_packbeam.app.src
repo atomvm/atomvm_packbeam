@@ -24,7 +24,7 @@
             "An escript and library to manipulate (create, list, delete) AtomVM PackBeam files"},
         {vsn, "0.8.2"},
         {registered, []},
-        {applications, [kernel, stdlib]},
+        {applications, [kernel, stdlib, compiler]},
         {env, []},
         {modules, [packbeam_api]},
         {licenses, ["Apache-2.0"]},
