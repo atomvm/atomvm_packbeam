@@ -345,7 +345,7 @@ is_beam(AVMElement) ->
 
 %% @private
 get_flags(AVMElement) ->
-    proplists:get_value(flags, AVMElement).
+    proplists:get_value(flags, AVMElement, 0).
 
 %% @private
 parse_files(InputPaths, Lib, StartModule, IncludeLines) ->
@@ -398,7 +398,7 @@ load_file(Path) ->
 prune(ParsedFiles, RootApplicationModule) ->
     case find_entrypoint(ParsedFiles) of
         false ->
-            throw("No input beam files contain start/0 entrypoint");
+            throw({no_start_module_found, ParsedFiles});
         {value, Entrypoint} ->
             BeamFiles = lists:filter(fun is_beam/1, ParsedFiles),
             Modules = closure(Entrypoint, BeamFiles, [get_element_module(Entrypoint)]),
@@ -524,14 +524,20 @@ remove(Module, ParsedFiles) ->
 
 %% @private
 get_imports(ParsedFile) ->
-    Imports = proplists:get_value(imports, proplists:get_value(chunk_refs, ParsedFile)),
+    Chunks = proplists:get_value(chunk_refs, ParsedFile, []),
+    Imports =
+        case proplists:get_value(imports, Chunks, []) of
+            missing_chunk -> [];
+            Imports0 -> Imports0
+        end,
     lists:usort([M || {M, _F, _A} <- Imports]).
 
 %% @private
 get_atoms(ParsedFile) ->
+    Chunks = proplists:get_value(chunk_refs, ParsedFile, []),
     AtomsT = [
         Atom
-     || {_Index, Atom} <- proplists:get_value(atoms, proplists:get_value(chunk_refs, ParsedFile))
+     || {_Index, Atom} <- proplists:get_value(atoms, Chunks, [])
     ],
     AtomsFromLiterals = get_atom_literals(proplists:get_value(uncompressed_literals, ParsedFile)),
     lists:usort(AtomsT ++ AtomsFromLiterals).
@@ -582,7 +588,7 @@ get_parsed_file(Module, ParsedFiles) ->
         {value, V} ->
             V;
         false ->
-            exit({module_not_found, Module, ParsedFiles})
+            throw({module_not_found, Module, ParsedFiles})
     end.
 
 %% @private
@@ -809,7 +815,10 @@ write_packbeam(OutputFilePath, ParsedFiles) ->
     PackedData =
         [<<?AVM_HEADER>> | [pack_data(ParsedFile) || ParsedFile <- ParsedFiles]] ++
             [create_header(0, 0, <<"end">>)],
-    file:write_file(OutputFilePath, PackedData).
+    case file:write_file(OutputFilePath, PackedData) of
+        ok -> ok;
+        {error, Reason} -> {error, {write_failed, OutputFilePath, Reason}}
+    end.
 
 %% @private
 pack_data(ParsedFile) ->
